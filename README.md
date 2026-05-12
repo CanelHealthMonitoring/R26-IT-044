@@ -50,7 +50,7 @@ The proposed solution is an IoT system that processes data locally at the canal 
 * pH Sensor with probe
 * DS18B20 Waterproof Digital Temperature Sensor
 * AC-DC 5V Isolated Switching Power Supply Step down Module
-* ]LM2596 DC-DC Buck Converter
+* LM2596 DC-DC Buck Converter
 
 ---
 
