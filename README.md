@@ -1,72 +1,64 @@
-# IoT-Based Canal Health Monitoring System Using Edge Computing for Siltation 🌊🛰️
+# IoT Based Canal Health Monitoring System Using Edge Computing for Siltation
 
-[![Project Phase](https://img.shields.io/badge/Project-Phase%20II-blue.svg)](#)
-[![Hardware](https://img.shields.io/badge/Hardware-ESP32%20%7C%20Raspberry%20Pi-green.svg)](#)
-[![Network](https://img.shields.io/badge/Network-LoRa%20Mesh-orange.svg)](#)
-[![Machine Learning](https://img.shields.io/badge/ML-Random%20Forest-yellow.svg)](#)
+**Project Group:** R26-IT-044
+**Institution:** Sri Lanka Institute of Information Technology (SLIIT)
 
-[cite_start]**Research Group:** R26-IT-044 [cite: 2]
+## 1. Project Overview
 
-## 📖 Project Overview
+Irrigation canals often suffer from mud buildup and water pollution, which leads to a poor water supply and hurts crop production. Currently, canal monitoring relies primarily on manual checks. This process is slow, meaning problems are discovered too late. Existing smart monitoring systems are inadequate as they require strong internet connections that fail in rural areas, and they often send confusing raw data that is difficult for end-users to interpret.
 
-[cite_start]Irrigation canals frequently suffer from mud buildup and water pollution, leading to poor water supply and hurting crop production[cite: 27]. [cite_start]Traditional canal monitoring relies on slow manual checks, causing critical problems to be discovered too late[cite: 28, 29]. [cite_start]Existing smart monitoring systems are often flawed because they require strong internet connections that fail in rural areas and provide raw, confusing data to end-users[cite: 30, 31].
-
-**Our Solution:**
-[cite_start]We built an IoT system that processes data locally at the edge rather than relying on cloud computing[cite: 33]. [cite_start]The system calculates simple Canal Health Index (CHI) and Canal Water Quality Index (CWQI) scores directly from sensor readings[cite: 34]. [cite_start]Utilizing a wireless LoRa network, the devices filter data locally and function without mobile internet[cite: 35]. [cite_start]The processed information is sent to an easy-to-use, map-based web dashboard (Canal IQ) to help farmers and irrigation officers make quick, informed decisions[cite: 36, 482].
+**Proposed Architecture:**
+The proposed solution is an IoT system that processes data locally at the canal instead of relying on the cloud. Sensors measure parameters such as water depth and clarity, allowing the edge devices to instantly calculate simple Canal Health Index (CHI) and Canal Water Quality Index (CWQI) scores. The edge devices filter the data locally and transmit important updates using a wireless LoRa network, ensuring continuous operation even in the absence of mobile internet. All finalized information is sent to a map-based web dashboard to assist irrigation authorities and farmers in making quick decisions.
 
 ---
 
-## ✨ Core Modules & Features
+## 2. System Modules
 
-### [cite_start]1. Canal Health Monitoring & CHI Classification [cite: 38, 39]
-* [cite_start]**Real-Time Sensing:** Collects data on water depth, flow rate, and turbidity[cite: 44].
-* [cite_start]**Sludge Detection:** Computes depth loss to identify sediment and sludge accumulation[cite: 49, 50].
-* [cite_start]**CHI Master Formula:** Calculates a health score weighted at 40% for flow rate, 35% for turbidity, and 25% for sludge depth[cite: 93].
-* [cite_start]**Classification:** Maps conditions into four bands: Healthy (≥80), Moderate (60-79), Poor (40-59), and Critical (<40)[cite: 154, 155, 157, 158, 160, 161, 163, 164].
+### 2.1 Canal Health Monitoring & CHI Classification
+* **Data Collection:** Sensors collect real-time canal data including water depth, flow rate, and turbidity.
+* **Depth & Sludge Analysis:** The system compares the current canal depth with a baseline to identify sediment accumulation.
+* **Index Calculation:** The Canal Health Index (CHI) is computed using a weighted formula[cite: 56]. [cite_start]The weights are assigned as 40% for the flow score, 35% for the turbidity score, and 25% for the sludge score.
+* **Classification:** The final CHI value is mapped to health bands: Healthy, Moderate, Poor, or Critical.
 
-### [cite_start]2. Canal Water Quality Monitoring & CWQI Classification [cite: 194, 195]
-* [cite_start]**Parameter Tracking:** Monitors pH, Electrical Conductivity (EC), and Temperature[cite: 200].
-* [cite_start]**CWQI Formula:** Computes a water quality score weighted at 50% for EC, 37.5% for pH, and 12.5% for temperature[cite: 242].
-* [cite_start]**Contamination Profiling:** Uses rule-based logic to classify contamination as Organic, Chemical, or Mixed[cite: 211, 212].
-* [cite_start]**Alert System:** Triggers instant alerts to farmers for critical contamination states[cite: 221].
+### 2.2 Canal Water Quality Monitoring & CWQI Classification
+* **Data Collection:** Sensors collect real-time canal data for pH, Electrical Conductivity (EC), and Temperature.
+* **Index Calculation:** The Canal Water Quality Index (CWQI) is computed using a weighted formula[cite: 209]. [cite_start]The weighting consists of EC at 50%, pH at 37.5%, and Temperature at 12.5%.
+* **Contamination Profiling:** Rule-based logic on the ESP32 classifies the water as having Organic, Chemical, or Mixed contamination. 
+* **Classification:** The CWQI is mapped to statuses of Healthy (≥80), Warning (60–79), or Critical (<60).
 
-### [cite_start]3. IoT-Based Edge Data Aggregation [cite: 338]
-* [cite_start]**LoRa Architecture:** Utilizes a private LoRa-based multi-hop mesh network to bypass unreliable cellular networks[cite: 409].
-* [cite_start]**Long-Range Transmission:** Capable of relaying data up to 15km using low-power Culvert Mini Nodes[cite: 410, 411].
-* [cite_start]**Central Edge Hub:** A Raspberry Pi Zero serves as the base station, gathering LoRa payloads and forwarding processed data to the cloud via Wi-Fi[cite: 413, 414].
-* [cite_start]**Network Health:** Implements a Multi-Criteria Decision Analysis (MCDA) algorithm to track network stability using RSSI, SNR, and Packet Loss[cite: 340, 342, 345, 348].
+### 2.3 IoT-Based Edge Data Aggregation
+* **Architecture:** The module is designed for reliable data transmission utilizing a LoRa-based multi-hop communication architecture. This bypasses unreliable cellular networks and is capable of relaying data up to 15km through a private LoRa mesh path.
+* **Hardware Nodes:** Culvert Mini Nodes equipped with ESP32 microcontrollers and LoRa modules are deployed along the canals. A Raspberry Pi Zero serves as the centralized base station, gathering payloads and forwarding processed sensor data to a cloud server via Wi-Fi.
+* **Network Health Tracking:** A Multi-Criteria Decision Analysis (MCDA) Algorithm evaluates network stability [cite: 356] [cite_start]by assessing Received Signal Strength Indicator (RSSI), Signal-to-Noise Ratio (SNR), and Packet Loss.
 
-### [cite_start]4. Smart Web Dashboard & Infrastructure ML [cite: 431, 433]
-* [cite_start]**Canal IQ Dashboard:** Features an interactive map with colour-coded IoT nodes and pop-up sensor breakdowns[cite: 482, 483, 484].
-* [cite_start]**Seasonal Analysis:** Compares metrics across Yala and Maha seasons with automated PDF report generation[cite: 485, 486].
-* [cite_start]**Predictive Maintenance:** Uses a Random Forest ML model (80.64% accuracy) to automatically monitor system infrastructure performance (CPU, Memory, Query response time) and predict slowdowns[cite: 434, 436, 476, 477].
-* [cite_start]**Bilingual UI:** Supports English and Sinhala with a responsive, glassmorphism design[cite: 488].
+### 2.4 Smart Web Dashboard & Infrastructure ML
+* **Web Interface:** The Canal IQ Website features an interactive map with colour-coded IoT nodes and pop-up CHI/CWQI sensor breakdowns.
+* **Analytics:** Includes a dashboard with live node summaries, status distribution pie charts, seasonal analysis (Yala vs Maha), and PDF report generation.
+* **Predictive Maintenance:** The admin panel is integrated with a Machine Learning model for infrastructure health predictions. After testing three models on parameters like CPU and memory usage, Random Forest was selected as the best-performing model, achieving an 80.64% accuracy rate.
 
 ---
 
-## 🛠️ Hardware Stack
+## 3. Hardware Requirements
 
-* [cite_start]**Microcontrollers:** ESP32-S3-N16R8 [cite: 327] [cite_start]& ESP32-C3 SuperMini [cite: 425, 426]
-* [cite_start]**Base Station:** Raspberry Pi Zero [cite: 421]
-* [cite_start]**Communication:** Ra-02 LoRa Modules [cite: 420]
-* [cite_start]**Power:** AC-DC 5V Isolated Switching Power Supply Step down Modules & LM2596 DC-DC Buck Converters [cite: 322, 422]
-* **Sensors:**
-  * [cite_start]JSN-SR04T Waterproof Ultrasonic Sensor (Depth/Sludge) [cite: 324]
-  * [cite_start]YF-S201 Water Flow Sensor [cite: 329]
-  * [cite_start]Analog TDS Water Conductivity Sensor (EC) [cite: 325]
-  * [cite_start]Turbidity Sensor [cite: 326]
-  * [cite_start]pH Sensor with probe [cite: 323]
-  * [cite_start]DS18B20 Waterproof Digital Temperature Sensor [cite: 328]
+* ESP32-S3-N16R8 & ESP32-C3 SuperMini
+* Raspberry Pi Zero
+* Ra-02 LoRa Module
+* JSN-SR04T Waterproof Ultrasonic Distance Measuring Module
+* YF-S201 Water Flow Sensor
+* Analog TDS Water Conductivity Sensor
+* Turbidity Sensor
+* pH Sensor with probe
+* DS18B20 Waterproof Digital Temperature Sensor
+* AC-DC 5V Isolated Switching Power Supply Step down Module
+* ]LM2596 DC-DC Buck Converter
 
 ---
 
-## [cite_start]🧑‍💻 Team Members [cite: 4]
+## 4. Research Team
 
-| Name | Student ID | Component |
-| :--- | :--- | :--- |
-| [cite_start]**Chandraguptha H.A.T** [cite: 40] | [cite_start]IT22091970 [cite: 40] | [cite_start]Canal Health Monitoring & CHI [cite: 38, 39] |
-| [cite_start]**Pasindu W.V.G** [cite: 196] | [cite_start]IT22273512 [cite: 196] | [cite_start]Canal Water Quality & Contamination [cite: 194, 195] |
-| [cite_start]**Sanjana K.G.T.S** [cite: 339] | [cite_start]IT22224170 [cite: 339] | [cite_start]IoT-Based Edge Data Aggregation [cite: 338] |
-| [cite_start]**Viduranga S.P.S** [cite: 432] | [cite_start]IT22215192 [cite: 432] | [cite_start]Smart Web Dashboard & Infrastructure ML [cite: 431, 433] |
+* **CHANDRAGUPTHA H.A.T** (IT22091970) – Canal Health Monitoring & Canal Health Index (CHI) Classification
+* **Pasindu W.G.V** (IT22273512) – Canal Water Quality Monitoring & Contamination Classification
+* **Sanjana K.G.T.S** (IT22224170) – IoT-Based Edge Data Aggregation module 
+* **Viduranga S.P.S** (IT22215192) – Smart Web Based System Health Monitoring Dashboard
 
 ---
