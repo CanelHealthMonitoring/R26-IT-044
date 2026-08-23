@@ -84,7 +84,7 @@ const AdminDashboard = () => {
     setIsRefreshing(true)
     try {
       setError(null)
-      const response = await fetch('http://127.0.0.1:5000/diagnose')
+      const response = await fetch('http://13.63.240.147:5000/diagnose')
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       const data = await response.json()
       if (data.metrics && data.prediction) {

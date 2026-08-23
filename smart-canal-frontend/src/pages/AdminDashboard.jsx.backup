@@ -1,0 +1,397 @@
+
+import { useState, useEffect } from 'react'
+
+import { useTranslation } from 'react-i18next'
+
+import {
+
+  FiServer, FiCpu, FiHardDrive, FiActivity, FiCheckCircle,
+
+  FiAlertTriangle, FiTrendingUp, FiAlertOctagon, FiZap,
+
+  FiDatabase, FiClock, FiGlobe, FiBarChart2, FiShield
+
+} from 'react-icons/fi'
+
+import { motion, AnimatePresence } from 'framer-motion'
+
+
+
+const CLASS_MAP = {
+
+  Healthy: {
+
+    color: '#10B981',
+
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+
+    border: 'border-emerald-500 dark:border-emerald-400',
+
+    icon: FiCheckCircle,
+
+    gradient: 'from-emerald-400 to-teal-400'
+
+  },
+
+  'Slightly Degraded': {
+
+    color: '#F59E0B',
+
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
+
+    border: 'border-amber-500 dark:border-amber-400',
+
+    icon: FiAlertTriangle,
+
+    gradient: 'from-amber-400 to-yellow-400'
+
+  },
+
+  'Moderate Load': {
+
+    color: '#F97316',
+
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+
+    border: 'border-orange-500 dark:border-orange-400',
+
+    icon: FiTrendingUp,
+
+    gradient: 'from-orange-400 to-red-400'
+
+  },
+
+  'High Stress': {
+
+    color: '#EF4444',
+
+    bg: 'bg-red-50 dark:bg-red-900/20',
+
+    border: 'border-red-500 dark:border-red-400',
+
+    icon: FiAlertOctagon,
+
+    gradient: 'from-red-400 to-rose-400'
+
+  },
+
+  'Critical Failure': {
+
+    color: '#B91C1C',
+
+    bg: 'bg-red-100 dark:bg-red-900/40',
+
+    border: 'border-red-700 dark:border-red-600',
+
+    icon: FiZap,
+
+    gradient: 'from-red-600 to-red-800'
+
+  }
+
+}
+
+
+
+const ALL_METRICS = [
+
+  { key: 'cpu_usage', icon: FiCpu, label: 'CPU Usage', unit: '%' },
+
+  { key: 'memory_usage', icon: FiCpu, label: 'Memory Usage', unit: '%' },
+
+  { key: 'disk_usage', icon: FiHardDrive, label: 'Disk Usage', unit: '%' },
+
+  { key: 'load_average', icon: FiActivity, label: 'Load Average', unit: '%' },
+
+  { key: 'query_response_time', icon: FiDatabase, label: 'Query Response', unit: 'ms' },
+
+  { key: 'active_connections', icon: FiGlobe, label: 'Active Connections', unit: '' },
+
+  { key: 'error_count', icon: FiAlertOctagon, label: 'Error Count', unit: '' },
+
+  { key: 'latency', icon: FiClock, label: 'Latency', unit: 'ms' }
+
+]
+
+
+
+const AdminDashboard = () => {
+
+  const { t } = useTranslation()
+
+  const [metrics, setMetrics] = useState(null)
+
+  const [prediction, setPrediction] = useState(null)
+
+  const [loading, setLoading] = useState(true)
+
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const [error, setError] = useState(null)
+
+  const [lastUpdated, setLastUpdated] = useState(null)
+
+
+
+  const fetchDiagnosis = async () => {
+
+    setIsRefreshing(true)
+
+    try {
+
+      setError(null)
+
+      const response = await fetch('http://13.63.240.147:5000/diagnose')
+
+      if (!response.ok) throw new Error('HTTP error: ' + response.status)
+
+      const data = await response.json()
+
+      if (data.metrics && data.prediction) {
+
+        setMetrics(data.metrics)
+
+        setPrediction(data.prediction)
+
+      }
+
+      setLastUpdated(new Date())
+
+      setLoading(false)
+
+    } catch (err) {
+
+      console.error('Error:', err)
+
+      setError(err.message)
+
+      setLoading(false)
+
+    } finally {
+
+      setIsRefreshing(false)
+
+    }
+
+  }
+
+
+
+  useEffect(() => {
+
+    fetchDiagnosis()
+
+    const interval = setInterval(fetchDiagnosis, 5000)
+
+    return () => clearInterval(interval)
+
+  }, [])
+
+
+
+  const statusKey = prediction?.status || 'Unknown'
+
+  const statusInfo = CLASS_MAP[statusKey] || CLASS_MAP.Healthy
+
+
+
+  return (
+
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-8">
+
+      <div className="relative rounded-3xl overflow-hidden mb-8">
+
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/85 via-emerald-800/70 to-transparent" />
+
+        <div className="relative z-10 p-6 md:p-10 text-white">
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+            <div>
+
+              <h1 className="text-3xl md:text-4xl font-bold">Infrastructure Health Prediction</h1>
+
+              <p className="mt-2 text-white/80">
+
+                Real-time ML-powered system health monitoring · 
+
+                {error ? ' Offline' : ' Live Predictions'}
+
+              </p>
+
+            </div>
+
+            <div className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3">
+
+              <FiClock className="text-emerald-300" />
+
+              <span>{isRefreshing ? 'Analyzing...' : 'Auto 5s'}</span>
+
+              {lastUpdated && (
+
+                <span className="text-xs text-white/60 border-l border-white/20 pl-3">
+
+                  {lastUpdated.toLocaleTimeString()}
+
+                </span>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      {error && (
+
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 p-4 rounded-xl mb-6">
+
+          <p className="text-red-700 dark:text-red-300">{error}</p>
+
+        </div>
+
+      )}
+
+
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border p-6 mb-8 shadow-sm">
+
+        <div className={'h-1 w-full rounded-t-2xl bg-gradient-to-r ' + statusInfo.gradient} />
+
+        <div className="flex flex-col md:flex-row md:items-center gap-6 mt-4">
+
+          <div className={'p-4 rounded-2xl ' + statusInfo.bg + ' border ' + statusInfo.border}>
+
+            <statusInfo.icon className="text-4xl md:text-5xl" style={{ color: statusInfo.color }} />
+
+          </div>
+
+          <div>
+
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">PREDICTED STATUS</p>
+
+            <h2 className="text-3xl md:text-4xl font-bold" style={{ color: statusInfo.color }}>
+
+              {loading ? 'Analyzing...' : prediction?.status || 'Unknown'}
+
+            </h2>
+
+            <p className="text-sm text-slate-500 mt-1">
+
+              Last diagnosis: {lastUpdated?.toLocaleTimeString() || 'N/A'}
+
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border p-6 mb-8 shadow-sm">
+
+        <h3 className="text-sm font-semibold mb-4">HEALTH STATUS REFERENCE</h3>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+
+          {Object.entries(CLASS_MAP).map(([status, info]) => {
+
+            const Icon = info.icon
+
+            return (
+
+              <div key={status} className={'p-3 rounded-xl ' + info.bg + ' border ' + info.border}>
+
+                <div className="flex items-center gap-2">
+
+                  <Icon className="text-sm" style={{ color: info.color }} />
+
+                  <span className="font-semibold text-xs" style={{ color: info.color }}>{status}</span>
+
+                </div>
+
+              </div>
+
+            )
+
+          })}
+
+        </div>
+
+      </div>
+
+
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border p-6 shadow-sm">
+
+        <h3 className="text-base font-semibold mb-4">Current System Metrics</h3>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+          {ALL_METRICS.map((config) => {
+
+            const value = metrics?.[config.key] ?? 0
+
+            const displayValue = typeof value === 'number' ? value.toFixed(1) : value
+
+            const Icon = config.icon
+
+            return (
+
+              <div key={config.key} className="bg-slate-50 dark:bg-gray-700/50 rounded-xl p-4">
+
+                <div className="flex items-center gap-2 mb-2">
+
+                  <Icon className="text-slate-400" />
+
+                  <span className="text-xs text-slate-600 dark:text-slate-400">{config.label}</span>
+
+                </div>
+
+                <p className="text-2xl font-bold text-slate-800 dark:text-white">
+
+                  {displayValue} {config.unit}
+
+                </p>
+
+              </div>
+
+            )
+
+          })}
+
+        </div>
+
+        <div className="mt-4 pt-3 border-t text-xs text-slate-400">
+
+          {Object.keys(metrics || {}).length}/8 active
+
+        </div>
+
+      </div>
+
+
+
+      <div className="mt-8 text-center text-xs text-slate-400 border-t pt-4">
+
+        <p>© 2026 CanalIQ · ML Infrastructure Monitoring · 100% Real AWS Data + ML</p>
+
+      </div>
+
+    </div>
+
+  )
+
+}
+
+
+
+export default AdminDashboard
+
