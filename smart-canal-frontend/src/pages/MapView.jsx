@@ -37,7 +37,6 @@ const getNodeLocations = () => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
-      // Merge with defaults to ensure all nodes exist
       const merged = { ...DEFAULT_NODES }
       Object.keys(parsed).forEach(key => {
         if (merged[key]) {
@@ -566,29 +565,32 @@ const MapView = () => {
   // ---- DYNAMIC NODE COORDINATES (from localStorage) ----
   const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
 
-  // Listen for storage changes (when Admin page updates location)
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const updated = getNodeLocations()
-      setNodeCoords(updated)
-    }
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+  // ============================================================
+  // TOAST NOTIFICATION
+  // ============================================================
+  const showLocationToast = (nodeId, lat, lng) => {
+    const toast = document.createElement('div')
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20 animate-slide-up'
+    toast.innerHTML = `
+      <span class="text-xl">📍</span>
+      <div>
+        <p class="font-semibold text-sm">${nodeId} Location Updated</p>
+        <p class="text-xs opacity-90">${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+      </div>
+      <button onclick="this.parentElement.remove()" class="ml-2 text-white/70 hover:text-white">✕</button>
+    `
+    document.body.appendChild(toast)
+    setTimeout(() => {
+      toast.style.opacity = '0'
+      toast.style.transform = 'translateX(-50%) translateY(20px)'
+      toast.style.transition = 'all 0.5s ease'
+      setTimeout(() => toast.remove(), 600)
+    }, 5000)
+  }
 
-  // Also reload on focus (for same-tab updates)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        const updated = getNodeLocations()
-        setNodeCoords(updated)
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
-
-  // WebSocket
+  // ============================================================
+  // WEB SOCKET
+  // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
     try {
@@ -603,6 +605,36 @@ const MapView = () => {
         try {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
+
+          // ===== CHECK FOR LOCATION UPDATE =====
+          if (data.type === 'location-update') {
+            console.log('📍 Location update received:', data.nodeId, data.lat, data.lng)
+            
+            // Update localStorage
+            const saved = localStorage.getItem('node_locations')
+            let nodes = saved ? JSON.parse(saved) : getNodeLocations()
+            
+            if (nodes[data.nodeId]) {
+              nodes[data.nodeId] = {
+                ...nodes[data.nodeId],
+                lat: data.lat,
+                lng: data.lng
+              }
+              // Merge with defaults to keep structure
+              const merged = { ...DEFAULT_NODES, ...nodes }
+              localStorage.setItem('node_locations', JSON.stringify(merged))
+              
+              // Update state to trigger re-render
+              setNodeCoords(merged)
+              setLastUpdated(new Date())
+              
+              // Show toast notification
+              showLocationToast(data.nodeId, data.lat, data.lng)
+            }
+            return
+          }
+
+          // ===== NORMAL SENSOR DATA =====
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
@@ -640,6 +672,29 @@ const MapView = () => {
       if (socketRef.current) socketRef.current.close()
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     }
+  }, [])
+
+  // ============================================================
+  // STORAGE & FOCUS LISTENERS
+  // ============================================================
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updated = getNodeLocations()
+      setNodeCoords(updated)
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const updated = getNodeLocations()
+        setNodeCoords(updated)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const createMarker = (nodeId, node) => {
@@ -724,10 +779,8 @@ const MapView = () => {
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           />
 
-          {/* Data Flow Animation – using dynamic nodeCoords */}
           <AnimatedDataFlow map={mapRef.current} paths={DATA_FLOW_PATHS} nodeCoords={nodeCoords} />
 
-          {/* Nodes */}
           {Object.keys(nodeCoords).map((nodeId) => {
             const node = nodeCoords[nodeId]
             const data = nodesData[nodeId]
@@ -804,10 +857,8 @@ const MapView = () => {
         </div>
       </motion.div>
 
-      {/* ACRONYMS BANNER */}
       <AcronymsBanner />
 
-      {/* FOOTER */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

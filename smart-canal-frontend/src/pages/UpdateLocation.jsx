@@ -1,33 +1,130 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+
+// ============================================================
+// WebSocket URL (Same as other pages)
+// ============================================================
+const WS_URL = 'wss://zerg0hkzgi.execute-api.eu-north-1.amazonaws.com/production/'
 
 const UpdateLocation = () => {
   const [searchParams] = useSearchParams()
   const nodeId = searchParams.get('node')
   const [status, setStatus] = useState('Getting GPS location...')
   const [coords, setCoords] = useState(null)
+  const socketRef = useRef(null)
+  const [wsConnected, setWsConnected] = useState(false)
 
+  // ===== WebSocket Connection (for broadcasting) =====
+  useEffect(() => {
+    if (!nodeId) return
+
+    try {
+      const socket = new WebSocket(WS_URL)
+      socketRef.current = socket
+
+      socket.onopen = () => {
+        console.log('✅ WebSocket Connected (Phone - Update)')
+        setWsConnected(true)
+      }
+
+      socket.onerror = (err) => {
+        console.error('WebSocket Error:', err)
+        setWsConnected(false)
+      }
+
+      socket.onclose = () => {
+        console.log('WebSocket Closed (Phone)')
+        setWsConnected(false)
+      }
+
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.close()
+        }
+      }
+    } catch (e) {
+      console.error('WebSocket connection failed:', e)
+    }
+  }, [nodeId])
+
+  // ===== Broadcast Location via WebSocket =====
+  const broadcastLocation = (nodeId, lat, lng) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
+        type: 'location-update',
+        nodeId: nodeId,
+        lat: lat,
+        lng: lng
+      })
+      socketRef.current.send(message)
+      console.log('📡 Location broadcast sent:', message)
+    } else {
+      console.warn('⚠️ WebSocket not connected, cannot broadcast')
+    }
+  }
+
+  // ===== Save to localStorage =====
+  const saveToLocalStorage = (nodeId, lat, lng) => {
+    const saved = localStorage.getItem('node_locations')
+    const nodes = saved ? JSON.parse(saved) : {}
+    
+    // Load default nodes if empty
+    const DEFAULT_NODES = {
+      'Sensor01': { lat: 7.1395, lng: 80.0408, label: 'Sensor Node 01', type: 'sensor' },
+      'Sensor02': { lat: 7.1368, lng: 80.0415, label: 'Sensor Node 02', type: 'sensor' },
+      'TransportA': { lat: 7.1396, lng: 80.0412, label: 'Transport Node A', type: 'transport' },
+      'TransportB': { lat: 7.1383, lng: 80.0413, label: 'Transport Node B', type: 'transport' },
+      'TransportC': { lat: 7.1370, lng: 80.0419, label: 'Transport Node C', type: 'transport' },
+      'BaseStation': { lat: 7.1364, lng: 80.0428, label: 'Base Station', type: 'base' }
+    }
+
+    const allNodes = { ...DEFAULT_NODES, ...nodes }
+    if (allNodes[nodeId]) {
+      allNodes[nodeId] = {
+        ...allNodes[nodeId],
+        lat: lat,
+        lng: lng
+      }
+    } else {
+      allNodes[nodeId] = {
+        label: nodeId,
+        type: 'unknown',
+        lat: lat,
+        lng: lng
+      }
+    }
+
+    localStorage.setItem('node_locations', JSON.stringify(allNodes))
+    console.log('💾 Saved to localStorage:', nodeId, lat, lng)
+  }
+
+  // ===== Main GPS Logic =====
   useEffect(() => {
     if (!nodeId) {
       setStatus('❌ Invalid node ID')
       return
     }
 
-    // Check if GPS is available
     if (!navigator.geolocation) {
       setStatus('❌ Geolocation is not supported by this browser')
       return
     }
 
-    // Get GPS Location
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
         setCoords({ lat: latitude, lng: longitude })
+        
+        // 1. Save to localStorage
+        saveToLocalStorage(nodeId, latitude, longitude)
+        
+        // 2. Broadcast via WebSocket
+        broadcastLocation(nodeId, latitude, longitude)
+        
         setStatus('✅ Location captured! Redirecting...')
         
-        // Redirect back to admin page with coordinates
+        // 3. Redirect back to admin page with coordinates
         setTimeout(() => {
           const redirectUrl = `/admin/locations?update=${nodeId}&lat=${latitude}&lng=${longitude}`
           window.location.href = redirectUrl
@@ -53,17 +150,14 @@ const UpdateLocation = () => {
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-200 dark:border-gray-700"
       >
-        {/* Icon */}
         <div className="text-6xl mb-4">
           {status.includes('✅') ? '📍' : status.includes('❌') ? '⚠️' : '📡'}
         </div>
 
-        {/* Title */}
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
           {nodeId ? `Updating: ${nodeId}` : 'Invalid Request'}
         </h1>
 
-        {/* Status Message */}
         <div className={`p-4 rounded-xl mb-4 text-sm font-medium ${
           status.includes('✅') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' :
           status.includes('❌') ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
@@ -72,21 +166,18 @@ const UpdateLocation = () => {
           {status}
         </div>
 
-        {/* Loading Spinner */}
         {!status.includes('✅') && !status.includes('❌') && (
           <div className="flex justify-center">
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
 
-        {/* Coordinates Display */}
         {coords && (
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-gray-700 p-2 rounded-lg">
             Lat: {coords.lat.toFixed(6)} | Lng: {coords.lng.toFixed(6)}
           </div>
         )}
 
-        {/* Manual Input (Fallback) */}
         {status.includes('❌') && (
           <div className="mt-4 text-left">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Manual Entry (Fallback):</p>
@@ -109,6 +200,9 @@ const UpdateLocation = () => {
                 const lat = document.getElementById('manualLat').value
                 const lng = document.getElementById('manualLng').value
                 if (lat && lng) {
+                  // Save manually
+                  saveToLocalStorage(nodeId, parseFloat(lat), parseFloat(lng))
+                  broadcastLocation(nodeId, parseFloat(lat), parseFloat(lng))
                   window.location.href = `/admin/locations?update=${nodeId}&lat=${lat}&lng=${lng}`
                 }
               }}
@@ -119,7 +213,13 @@ const UpdateLocation = () => {
           </div>
         )}
 
-        <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
+        {/* WebSocket Status */}
+        <div className="mt-3 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
+          {wsConnected ? '📡 Live broadcast enabled' : '📡 Broadcasting offline'}
+        </div>
+
+        <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
           {nodeId ? `Updating location for ${nodeId}` : 'Please scan a valid QR code'}
         </p>
       </motion.div>
