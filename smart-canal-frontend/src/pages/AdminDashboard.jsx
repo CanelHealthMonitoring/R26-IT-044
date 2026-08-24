@@ -7,13 +7,17 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// ============================================================
+// CLASS MAP - Statuses with underscores AND spaces (both)
+// ============================================================
 const CLASS_MAP = {
   'Healthy': {
     color: '#10B981',
     bg: 'bg-emerald-50 dark:bg-emerald-900/20',
     border: 'border-emerald-500 dark:border-emerald-400',
     icon: FiCheckCircle,
-    meaning: 'systemNormal',
+    label: 'Healthy',
+    meaning: 'System normal / No issues',
     gradient: 'from-emerald-400 to-teal-400'
   },
   'Slightly Degraded': {
@@ -21,7 +25,17 @@ const CLASS_MAP = {
     bg: 'bg-amber-50 dark:bg-amber-900/20',
     border: 'border-amber-500 dark:border-amber-400',
     icon: FiAlertTriangle,
-    meaning: 'slightlyDegraded',
+    label: 'Slightly Degraded',
+    meaning: 'Small performance drop',
+    gradient: 'from-amber-400 to-yellow-400'
+  },
+  'Slightly_Degraded': {
+    color: '#F59E0B',
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
+    border: 'border-amber-500 dark:border-amber-400',
+    icon: FiAlertTriangle,
+    label: 'Slightly Degraded',
+    meaning: 'Small performance drop',
     gradient: 'from-amber-400 to-yellow-400'
   },
   'Moderate Load': {
@@ -29,7 +43,17 @@ const CLASS_MAP = {
     bg: 'bg-orange-50 dark:bg-orange-900/20',
     border: 'border-orange-500 dark:border-orange-400',
     icon: FiTrendingUp,
-    meaning: 'moderateLoad',
+    label: 'Moderate Load',
+    meaning: 'System under load',
+    gradient: 'from-orange-400 to-red-400'
+  },
+  'Moderate_Load': {
+    color: '#F97316',
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+    border: 'border-orange-500 dark:border-orange-400',
+    icon: FiTrendingUp,
+    label: 'Moderate Load',
+    meaning: 'System under load',
     gradient: 'from-orange-400 to-red-400'
   },
   'High Stress': {
@@ -37,7 +61,17 @@ const CLASS_MAP = {
     bg: 'bg-red-50 dark:bg-red-900/20',
     border: 'border-red-500 dark:border-red-400',
     icon: FiAlertOctagon,
-    meaning: 'highStress',
+    label: 'High Stress',
+    meaning: 'High risk condition',
+    gradient: 'from-red-400 to-rose-400'
+  },
+  'High_Stress': {
+    color: '#EF4444',
+    bg: 'bg-red-50 dark:bg-red-900/20',
+    border: 'border-red-500 dark:border-red-400',
+    icon: FiAlertOctagon,
+    label: 'High Stress',
+    meaning: 'High risk condition',
     gradient: 'from-red-400 to-rose-400'
   },
   'Critical Failure': {
@@ -45,20 +79,30 @@ const CLASS_MAP = {
     bg: 'bg-red-100 dark:bg-red-900/40',
     border: 'border-red-700 dark:border-red-600',
     icon: FiZap,
-    meaning: 'criticalFailure',
+    label: 'Critical Failure',
+    meaning: 'System near crash',
+    gradient: 'from-red-600 to-red-800'
+  },
+  'Critical_Failure': {
+    color: '#B91C1C',
+    bg: 'bg-red-100 dark:bg-red-900/40',
+    border: 'border-red-700 dark:border-red-600',
+    icon: FiZap,
+    label: 'Critical Failure',
+    meaning: 'System near crash',
     gradient: 'from-red-600 to-red-800'
   },
 }
 
 const ALL_METRICS = [
-  { key: 'cpu_usage', icon: FiCpu, label: 'cpuUsage', color: '#06B6D4', unit: '%', max: 100 },
-  { key: 'memory_usage', icon: FiCpu, label: 'memoryUsage', color: '#06B6D4', unit: '%', max: 100 },
-  { key: 'disk_usage', icon: FiHardDrive, label: 'diskUsage', color: '#06B6D4', unit: '%', max: 100 },
-  { key: 'load_average', icon: FiActivity, label: 'loadAverage', color: '#06B6D4', unit: '%', max: 100 },
-  { key: 'query_response_time', icon: FiDatabase, label: 'queryResponse', color: '#06B6D4', unit: 'ms', max: 500 },
-  { key: 'active_connections', icon: FiGlobe, label: 'activeConnections', color: '#06B6D4', unit: '', max: 200 },
-  { key: 'error_count', icon: FiAlertOctagon, label: 'errorCount', color: '#06B6D4', unit: '', max: 50 },
-  { key: 'latency', icon: FiClock, label: 'latency', color: '#06B6D4', unit: 'ms', max: 500 },
+  { key: 'cpu_usage', icon: FiCpu, label: 'CPU Usage', color: '#06B6D4', unit: '%', max: 100 },
+  { key: 'memory_usage', icon: FiCpu, label: 'Memory Usage', color: '#06B6D4', unit: '%', max: 100 },
+  { key: 'disk_usage', icon: FiHardDrive, label: 'Disk Usage', color: '#06B6D4', unit: '%', max: 100 },
+  { key: 'load_average', icon: FiActivity, label: 'Load Average', color: '#06B6D4', unit: '%', max: 100 },
+  { key: 'query_response_time', icon: FiDatabase, label: 'Query Response', color: '#06B6D4', unit: 'ms', max: 500 },
+  { key: 'active_connections', icon: FiGlobe, label: 'Active Connections', color: '#06B6D4', unit: '', max: 200 },
+  { key: 'error_count', icon: FiAlertOctagon, label: 'Error Count', color: '#06B6D4', unit: '', max: 50 },
+  { key: 'latency', icon: FiClock, label: 'Latency', color: '#06B6D4', unit: 'ms', max: 500 },
 ]
 
 const timeSince = (date) => {
@@ -117,27 +161,17 @@ const AdminDashboard = () => {
     return () => clearInterval(timer)
   }, [lastUpdated])
 
+  // Get status info - handles both space and underscore versions
   const statusKey = prediction?.status || 'Unknown'
   const statusInfo = CLASS_MAP[statusKey] || CLASS_MAP['Healthy']
 
-  const getLabel = (key) => {
-    const map = {
-      'cpuUsage': t('admin.features.cpu_usage'),
-      'memoryUsage': t('admin.features.memory_usage'),
-      'diskUsage': t('admin.features.disk_usage'),
-      'loadAverage': t('admin.features.load_average'),
-      'queryResponse': t('admin.features.query_response_time'),
-      'activeConnections': t('admin.features.active_connections'),
-      'errorCount': t('admin.features.error_count'),
-      'latency': t('admin.features.latency')
-    }
-    return map[key] || key
-  }
+  // Helper to check if this status is the current one
+  const isCurrentStatus = (status) => status === prediction?.status
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-8 transition-colors duration-300">
       
-      {/* ===== HERO BANNER (External Image) ===== */}
+      {/* ===== HERO BANNER ===== */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -170,7 +204,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10">
               <FiClock className="text-emerald-300" />
               <span className="text-sm font-medium text-white/90">
-                {isRefreshing ? t('admin.analyzing') : 'Auto 5s'}
+                {isRefreshing ? 'Analyzing...' : 'Auto 5s'}
               </span>
               {lastUpdated && (
                 <span className="text-xs text-white/60 border-l border-white/20 pl-3">
@@ -197,13 +231,13 @@ const AdminDashboard = () => {
               onClick={fetchDiagnosis}
               className="px-4 py-1.5 bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
             >
-              {t('admin.analyzing')}
+              Retry
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ML PREDICTED STATUS */}
+      {/* ===== ML PREDICTED STATUS ===== */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -218,19 +252,19 @@ const AdminDashboard = () => {
                 <statusInfo.icon className="text-4xl md:text-5xl" style={{ color: statusInfo.color }} />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('admin.predictedStatus')}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">PREDICTED STATUS</p>
                 <div className="flex flex-wrap items-center justify-between gap-3 mt-1 w-full">
                   <h2 className="text-3xl md:text-4xl font-bold" style={{ color: statusInfo.color }}>
-                    {loading && !prediction ? t('admin.analyzing') : prediction?.status || 'Unknown'}
+                    {loading && !prediction ? 'Analyzing...' : (prediction?.status || 'Unknown')}
                   </h2>
                   <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${statusInfo.border} ${statusInfo.bg} inline-flex items-center gap-1.5 shrink-0`}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusInfo.color }} />
-                    {t(`admin.classes.${statusKey === 'Healthy' ? 'Healthy' : statusKey === 'Slightly Degraded' ? 'Slightly_Degraded' : statusKey === 'Moderate Load' ? 'Moderate_Load' : statusKey === 'High Stress' ? 'High_Stress' : 'Critical_Failure'}.meaning`)}
+                    {statusInfo.meaning}
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-blue-500 animate-pulse' : 'bg-emerald-400'}`} />
-                  {isRefreshing ? '⏳ ' + t('admin.analyzing') : `Last diagnosis: ${lastUpdated?.toLocaleTimeString() || 'N/A'}`}
+                  {isRefreshing ? '⏳ Analyzing...' : `Last diagnosis: ${lastUpdated?.toLocaleTimeString() || 'N/A'}`}
                 </p>
               </div>
             </div>
@@ -238,7 +272,7 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* HEALTH STATUS REFERENCE */}
+      {/* ===== HEALTH STATUS REFERENCE – HIGHLIGHT CURRENT ===== */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -248,26 +282,38 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-lg">📊</span>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('admin.referenceTitle')}</h3>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">HEALTH STATUS REFERENCE</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(CLASS_MAP).map(([status, info]) => {
+              // Only show each unique status once (skip underscore versions for display)
+              if (status.includes('_')) return null
+              
               const Icon = info.icon
-              const key = status === 'Healthy' ? 'Healthy' : status === 'Slightly Degraded' ? 'Slightly_Degraded' : status === 'Moderate Load' ? 'Moderate_Load' : status === 'High Stress' ? 'High_Stress' : 'Critical_Failure'
+              const isActive = isCurrentStatus(status) || isCurrentStatus(status.replace(' ', '_'))
+              
               return (
                 <motion.div
                   key={status}
                   whileHover={{ scale: 1.02 }}
-                  className={`p-3 rounded-xl ${info.bg} border ${info.border} transition-all duration-200`}
+                  className={`p-3 rounded-xl border transition-all duration-200 ${info.bg} ${info.border} ${
+                    isActive ? 'ring-2 ring-offset-2 shadow-lg' : ''
+                  }`}
+                  style={isActive ? { ringColor: info.color, boxShadow: `0 0 0 2px ${info.color}40` } : {}}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Icon className="text-sm" style={{ color: info.color }} />
+                    <Icon className={`text-sm transition-transform ${isActive ? 'scale-125' : ''}`} style={{ color: info.color }} />
                     <span className="font-semibold text-xs" style={{ color: info.color }}>
-                      {t(`admin.classes.${key}.label`)}
+                      {info.label}
                     </span>
+                    {isActive && (
+                      <span className="ml-auto text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-white/50 dark:bg-black/20 text-slate-600 dark:text-slate-300">
+                        Current
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {t(`admin.classes.${key}.meaning`)}
+                    {info.meaning}
                   </p>
                 </motion.div>
               )
@@ -276,7 +322,7 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* SYSTEM & AWS METRICS */}
+      {/* ===== SYSTEM METRICS ===== */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -288,7 +334,7 @@ const AdminDashboard = () => {
             <div className="p-2 rounded-xl bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-slate-400">
               <FiBarChart2 className="text-lg" />
             </div>
-            <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300">{t('admin.systemMetrics')}</h3>
+            <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300">Current System Metrics</h3>
             <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">8 Metrics</span>
             {lastUpdated && (
               <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">Updated: {lastUpdated.toLocaleTimeString()}</span>
@@ -323,7 +369,7 @@ const AdminDashboard = () => {
                       <div className={`p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 group-hover:scale-110 transition-transform`}>
                         <Icon className="text-sm" style={{ color: config.color }} />
                       </div>
-                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{getLabel(config.label)}</span>
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{config.label}</span>
                     </div>
                     <div className="flex items-end justify-center gap-1 mb-3">
                       <span className="text-2xl font-bold text-slate-800 dark:text-white leading-none">{displayValue}</span>
@@ -346,7 +392,7 @@ const AdminDashboard = () => {
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              {isRefreshing ? '🔄 ' + t('report.generating') : '✅ All metrics are live'}
+              {isRefreshing ? '🔄 Refreshing...' : '✅ All metrics are live'}
             </span>
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
               {Object.keys(metrics || {}).length}/8 active
