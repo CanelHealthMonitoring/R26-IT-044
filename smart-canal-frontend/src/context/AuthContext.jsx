@@ -2,17 +2,14 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const AuthContext = createContext()
 
-// Mock users – replace with real API later
 const MOCK_USERS = [
   { username: 'admin', password: 'admin123', role: 'admin', name: 'Admin User' },
   { username: 'user',  password: 'user123',  role: 'user',  name: 'Farm Officer' },
 ]
 
-// localStorage key
 const STORAGE_KEY = 'canaliq_user'
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user from localStorage if exists
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
@@ -25,7 +22,6 @@ export const AuthProvider = ({ children }) => {
     return null
   })
 
-  // Persist user to localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(user))

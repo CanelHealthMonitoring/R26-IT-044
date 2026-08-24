@@ -18,9 +18,9 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 // ============================================================
-// NODE COORDINATES
+// DEFAULT NODE COORDINATES (Fallback)
 // ============================================================
-const NODE_COORDS = {
+const DEFAULT_NODES = {
   'Sensor01': { lat: 7.1395, lng: 80.0408, label: 'Sensor Node 01', type: 'sensor' },
   'Sensor02': { lat: 7.1368, lng: 80.0415, label: 'Sensor Node 02', type: 'sensor' },
   'TransportA': { lat: 7.1396, lng: 80.0412, label: 'Transport Node A', type: 'transport' },
@@ -30,7 +30,30 @@ const NODE_COORDS = {
 }
 
 // ============================================================
-// DATA FLOW PATHS (for animation)
+// DYNAMIC NODE COORDINATES (from localStorage + fallback)
+// ============================================================
+const getNodeLocations = () => {
+  const saved = localStorage.getItem('node_locations')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      // Merge with defaults to ensure all nodes exist
+      const merged = { ...DEFAULT_NODES }
+      Object.keys(parsed).forEach(key => {
+        if (merged[key]) {
+          merged[key] = { ...merged[key], ...parsed[key] }
+        }
+      })
+      return merged
+    } catch (e) {
+      return DEFAULT_NODES
+    }
+  }
+  return DEFAULT_NODES
+}
+
+// ============================================================
+// DATA FLOW PATHS (node IDs only – coordinates resolved dynamically)
 // ============================================================
 const DATA_FLOW_PATHS = [
   {
@@ -70,19 +93,19 @@ const getVal = (obj, key) => {
 }
 
 // ============================================================
-// Animated Data Flow Component
+// Animated Data Flow Component – now accepts nodeCoords as prop
 // ============================================================
-const AnimatedDataFlow = ({ map, paths }) => {
+const AnimatedDataFlow = ({ map, paths, nodeCoords }) => {
   const animationRef = useRef(null)
   const pathLayersRef = useRef({})
   const dashOffsetRef = useRef(0)
 
   useEffect(() => {
-    if (!map) return
+    if (!map || !nodeCoords) return
 
     const createAnimatedPath = (pathConfig) => {
       const coords = pathConfig.nodes
-        .map(nodeId => NODE_COORDS[nodeId])
+        .map(nodeId => nodeCoords[nodeId])
         .filter(node => node)
         .map(node => [node.lat, node.lng])
 
@@ -212,16 +235,16 @@ const AnimatedDataFlow = ({ map, paths }) => {
       })
       pathLayersRef.current = {}
     }
-  }, [map, paths])
+  }, [map, paths, nodeCoords])
 
   return null
 }
 
 // ============================================================
-// Popup builders (unchanged)
+// Popup builders (now use nodeCoords via closure – but they receive nodeId and data)
 // ============================================================
-const buildSensorPopup = (nodeId, data) => {
-  const node = NODE_COORDS[nodeId]
+const buildSensorPopup = (nodeId, data, nodeCoords) => {
+  const node = nodeCoords[nodeId]
   if (!node) return '<div class="popup-content"><p style="color:#94a3b8;text-align:center;padding:20px 0;">Node not found</p></div>'
 
   const sensor = data?.sensor_data || {}
@@ -301,8 +324,8 @@ const buildSensorPopup = (nodeId, data) => {
   `
 }
 
-const buildTransportPopup = (nodeId, data) => {
-  const node = NODE_COORDS[nodeId]
+const buildTransportPopup = (nodeId, data, nodeCoords) => {
+  const node = nodeCoords[nodeId]
   if (!node) return '<div class="popup-content"><p style="color:#94a3b8;text-align:center;padding:20px 0;">Node not found</p></div>'
 
   const hop = data?.hop_details || {}
@@ -369,9 +392,10 @@ const buildTransportPopup = (nodeId, data) => {
 }
 
 // ============================================================
-// Enhanced Marker Icon Builder
+// Enhanced Marker Icon Builder (uses nodeCoords for type)
 // ============================================================
-const createEnhancedMarker = (type, nodeId, isConnected) => {
+const createEnhancedMarker = (nodeId, node, isConnected) => {
+  const type = node?.type || 'sensor'
   const color = type === 'sensor' ? '#22c55e' : type === 'transport' ? '#3b82f6' : '#ef4444'
   const label = type === 'sensor' ? 'S' : type === 'transport' ? 'T' : 'B'
 
@@ -465,7 +489,7 @@ const createEnhancedMarker = (type, nodeId, isConnected) => {
 }
 
 // ============================================================
-// Acronyms Banner – NEW DESIGN (below map)
+// Acronyms Banner (unchanged)
 // ============================================================
 const AcronymsBanner = () => {
   const acronyms = [
@@ -526,7 +550,7 @@ const AcronymsBanner = () => {
 }
 
 // ============================================================
-// Main Map Component
+// MAIN MAP COMPONENT
 // ============================================================
 const MapView = () => {
   const { t } = useTranslation()
@@ -539,6 +563,32 @@ const MapView = () => {
   const reconnectTimerRef = useRef(null)
   const mapRef = useRef(null)
 
+  // ---- DYNAMIC NODE COORDINATES (from localStorage) ----
+  const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
+
+  // Listen for storage changes (when Admin page updates location)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updated = getNodeLocations()
+      setNodeCoords(updated)
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // Also reload on focus (for same-tab updates)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const updated = getNodeLocations()
+        setNodeCoords(updated)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // WebSocket
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
     try {
@@ -593,16 +643,16 @@ const MapView = () => {
   }, [])
 
   const createMarker = (nodeId, node) => {
-    return createEnhancedMarker(node.type, nodeId, isConnected)
+    return createEnhancedMarker(nodeId, node, isConnected)
   }
 
   const getPopupContent = (nodeId, data) => {
-    const node = NODE_COORDS[nodeId]
+    const node = nodeCoords[nodeId]
     if (!node) return '<div class="popup-content"><p style="color:#94a3b8;text-align:center;padding:20px 0;">Node not found</p></div>'
     if (node.type === 'sensor') {
-      return buildSensorPopup(nodeId, data)
+      return buildSensorPopup(nodeId, data, nodeCoords)
     } else if (node.type === 'transport') {
-      return buildTransportPopup(nodeId, data)
+      return buildTransportPopup(nodeId, data, nodeCoords)
     }
     return ''
   }
@@ -674,12 +724,12 @@ const MapView = () => {
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           />
 
-          {/* Data Flow Animation */}
-          <AnimatedDataFlow map={mapRef.current} paths={DATA_FLOW_PATHS} />
+          {/* Data Flow Animation – using dynamic nodeCoords */}
+          <AnimatedDataFlow map={mapRef.current} paths={DATA_FLOW_PATHS} nodeCoords={nodeCoords} />
 
           {/* Nodes */}
-          {Object.keys(NODE_COORDS).map((nodeId) => {
-            const node = NODE_COORDS[nodeId]
+          {Object.keys(nodeCoords).map((nodeId) => {
+            const node = nodeCoords[nodeId]
             const data = nodesData[nodeId]
             const marker = createMarker(nodeId, node)
             const popupContent = getPopupContent(nodeId, data)
@@ -754,7 +804,7 @@ const MapView = () => {
         </div>
       </motion.div>
 
-      {/* ===== ACRONYMS BANNER – NOW BELOW THE MAP ===== */}
+      {/* ACRONYMS BANNER */}
       <AcronymsBanner />
 
       {/* FOOTER */}

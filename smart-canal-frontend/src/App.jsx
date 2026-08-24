@@ -5,6 +5,8 @@ import MapView from './pages/MapView'
 import SeasonAnalysis from './pages/SeasonAnalysis'
 import Report from './pages/Report'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminNodeLocations from './pages/AdminNodeLocations'
+import UpdateLocation from './pages/UpdateLocation'  // ← Add this
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import { useAuth } from './context/AuthContext'
@@ -17,6 +19,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/update-location" element={<UpdateLocation />} />  {/* ← Add this route */}
         <Route
           element={
             <ProtectedRoute>
@@ -31,6 +34,10 @@ function App() {
           <Route
             path="/admin"
             element={user?.role === 'admin' ? <AdminDashboard /> : <NotFound />}
+          />
+          <Route
+            path="/admin/locations"
+            element={user?.role === 'admin' ? <AdminNodeLocations /> : <NotFound />}
           />
           <Route path="*" element={<NotFound />} />
         </Route>

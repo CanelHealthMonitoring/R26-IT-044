@@ -7,9 +7,6 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// ============================================================
-// CLASS MAP - Statuses with underscores AND spaces (both)
-// ============================================================
 const CLASS_MAP = {
   'Healthy': {
     color: '#10B981',
@@ -161,17 +158,14 @@ const AdminDashboard = () => {
     return () => clearInterval(timer)
   }, [lastUpdated])
 
-  // Get status info - handles both space and underscore versions
   const statusKey = prediction?.status || 'Unknown'
   const statusInfo = CLASS_MAP[statusKey] || CLASS_MAP['Healthy']
 
-  // Helper to check if this status is the current one
   const isCurrentStatus = (status) => status === prediction?.status
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-8 transition-colors duration-300">
       
-      {/* ===== HERO BANNER ===== */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -216,7 +210,6 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* ERROR BANNER */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -237,7 +230,6 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== ML PREDICTED STATUS ===== */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -272,7 +264,7 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* ===== HEALTH STATUS REFERENCE – HIGHLIGHT CURRENT ===== */}
+      {/* HEALTH STATUS REFERENCE – HIGHLIGHT CURRENT */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -286,12 +278,9 @@ const AdminDashboard = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(CLASS_MAP).map(([status, info]) => {
-              // Only show each unique status once (skip underscore versions for display)
               if (status.includes('_')) return null
-              
               const Icon = info.icon
               const isActive = isCurrentStatus(status) || isCurrentStatus(status.replace(' ', '_'))
-              
               return (
                 <motion.div
                   key={status}
@@ -322,7 +311,7 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* ===== SYSTEM METRICS ===== */}
+      {/* SYSTEM METRICS */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -401,7 +390,6 @@ const AdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* FOOTER */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

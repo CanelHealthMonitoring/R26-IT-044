@@ -18,7 +18,6 @@ const Topbar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
 
-  // ===== UPDATED NOTIFICATIONS =====
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Sensor Node 01: CHI dropped below 60%', time: '5 min ago', read: false },
     { id: 2, text: 'Transport Node A: Packet loss > 5%', time: '12 min ago', read: false },
@@ -37,7 +36,6 @@ const Topbar = () => {
 
   const toggleLanguage = () => setLang((prev) => (prev === 'en' ? 'si' : 'en'))
 
-  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
@@ -57,7 +55,6 @@ const Topbar = () => {
 
   return (
     <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
-      {/* Left: brand title (unchanged) */}
       <div className="flex items-center gap-3">
         <img
           src={IMAGES.logo}
@@ -69,9 +66,7 @@ const Topbar = () => {
         </h1>
       </div>
 
-      {/* Right: actions */}
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Language button (unchanged) */}
         <button
           onClick={toggleLanguage}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium 
@@ -86,7 +81,6 @@ const Topbar = () => {
           </span>
         </button>
 
-        {/* Dark mode toggle (unchanged) */}
         <button
           onClick={toggleTheme}
           className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -94,7 +88,6 @@ const Topbar = () => {
           {dark ? <FiSun size={18} /> : <FiMoon size={18} />}
         </button>
 
-        {/* ---------- Notifications (redesigned) ---------- */}
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -156,7 +149,6 @@ const Topbar = () => {
           </AnimatePresence>
         </div>
 
-        {/* User avatar + menu (unchanged) */}
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}

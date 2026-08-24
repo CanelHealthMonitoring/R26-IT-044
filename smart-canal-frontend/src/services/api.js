@@ -10,7 +10,6 @@ export const fetchNodeById = (id) => {
 export const fetchSeasonData = () => Promise.resolve(seasonData)
 
 export const runMLPrediction = (nodeId) => {
-  // Simulate Random Forest prediction
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({

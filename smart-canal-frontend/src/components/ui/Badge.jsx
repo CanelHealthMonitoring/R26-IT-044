@@ -13,13 +13,10 @@ const statusColors = {
 const Badge = ({ status }) => {
   const { t } = useTranslation()
   
-  // Normalize status for display
   const displayStatus = status || 'Unknown'
   const colorClass = statusColors[displayStatus] || statusColors.Unknown
   
-  // Translate status - map to translation keys
   let translateKey = displayStatus.toLowerCase()
-  // Map specific statuses to translation keys
   if (translateKey === 'healthy') translateKey = 'healthy'
   if (translateKey === 'warning') translateKey = 'warning'
   if (translateKey === 'critical') translateKey = 'critical'
