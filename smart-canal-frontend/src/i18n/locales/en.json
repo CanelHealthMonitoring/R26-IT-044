@@ -11,11 +11,12 @@
   "demoUser": "user / user123",
 
   "navigation": {
-    "dashboard": "Dashboard",
-    "canalMap": "Canal Map",
-    "seasonAnalysis": "Season Analysis",
-    "reports": "Reports",
-    "mlPredictions": "ML Predictions"
+  "dashboard": "Dashboard",
+  "canalMap": "Canal Map",
+  "seasonAnalysis": "Season Analysis",
+  "reports": "Reports",
+  "mlPredictions": "ML Predictions",
+  "qrLocations": "QR Locations"
   },
 
   "topbar": {
@@ -194,6 +195,12 @@
     "predictBtn": "Predict Infrastructure Health",
     "analyzing": "Analyzing...",
     "predictedStatus": "Predicted Status",
+    "predictedStatusLabel": "PREDICTED STATUS",
+    "healthStatusReference": "HEALTH STATUS REFERENCE",
+    "metricsCount": "8 Metrics",
+    "allMetricsLive": "All metrics are live",
+    "infrastructureMonitoring": "ML Infrastructure Monitoring",
+    "realAwsData": "100% Real AWS Data + ML",
     "classes": {
       "Healthy": {
         "label": "Healthy",
@@ -229,8 +236,53 @@
     "invalidInput": "Please enter valid numbers for all fields"
   },
 
-  "notFound": "404 – Page Not Found",
+  "qrLocations": {
+    "title": "Node Location Setup",
+    "subtitle": "Scan QR codes with your phone to update node locations via GPS",
+    "manager": "📍 Node Location Manager",
+    "resetAll": "Reset All",
+    "resetting": "Resetting...",
+    "phoneSetup": "Phone Setup",
+    "totalNodes": "Total Nodes",
+    "updated": "Updated",
+    "default": "Default",
+    "statusLive": "Live",
+    "sensorNodes": "Sensor Nodes",
+    "transportNodes": "Transport Nodes",
+    "baseStation": "Base Station",
+    "environmentalPoints": "Environmental data collection points",
+    "dataRelay": "Data relay nodes in the mesh network",
+    "centralHub": "Central data aggregation hub",
+    "instructions": "How to Update Node Locations",
+    "steps": "4 Steps",
+    "step1": "Open on Phone",
+    "step1Desc": "Open this page on your phone browser",
+    "step2": "Scan QR Code",
+    "step2Desc": "Scan the QR for the node you want",
+    "step3": "Allow GPS",
+    "step3Desc": "Grant location permission when prompted",
+    "step4": "Auto-Update",
+    "step4Desc": "Location updates instantly on map",
+    "tip": "For local development, ensure PC and phone are on the same Wi-Fi network.",
+    "resetInfo": "Click the \"Reset All\" button in the header to restore all nodes to default locations.",
+    "footer": "Node Location Manager"
+  },
 
+  "acronyms": {
+    "title": "Key Acronyms",
+    "chi": "CHI",
+    "cwqi": "CWQI",
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "mcda": "MCDA",
+    "chiFull": "Canal Health Index",
+    "cwqiFull": "Canal Water Quality Index",
+    "rssiFull": "Received Signal Strength Indicator",
+    "snrFull": "Signal to Noise Ratio",
+    "mcdaFull": "Multi Criteria Decision Analysis"
+  },
+
+  "notFound": "404 – Page Not Found",
   "seasonLabels": {
     "month": "Month",
     "chi": "CHI",

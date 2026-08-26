@@ -489,15 +489,17 @@ const createEnhancedMarker = (nodeId, node, isConnected) => {
 }
 
 // ============================================================
-// Acronyms Banner
+// Acronyms Banner - Updated with Translation
 // ============================================================
 const AcronymsBanner = () => {
+  const { t } = useTranslation()
+  
   const acronyms = [
-    { label: 'CHI', full: 'Canal Health Index', color: 'from-emerald-400 to-teal-400' },
-    { label: 'CWQI', full: 'Canal Water Quality Index', color: 'from-cyan-400 to-blue-400' },
-    { label: 'RSSI', full: 'Received Signal Strength Indicator', color: 'from-orange-400 to-amber-400' },
-    { label: 'SNR', full: 'Signal to Noise Ratio', color: 'from-rose-400 to-pink-400' },
-    { label: 'MCDA', full: 'Multi Criteria Decision Analysis', color: 'from-violet-400 to-purple-400' }
+    { label: t('acronyms.chi'), full: t('acronyms.chiFull'), color: 'from-emerald-400 to-teal-400', icon: '📊' },
+    { label: t('acronyms.cwqi'), full: t('acronyms.cwqiFull'), color: 'from-cyan-400 to-blue-400', icon: '💧' },
+    { label: t('acronyms.rssi'), full: t('acronyms.rssiFull'), color: 'from-orange-400 to-amber-400', icon: '📡' },
+    { label: t('acronyms.snr'), full: t('acronyms.snrFull'), color: 'from-rose-400 to-pink-400', icon: '🔊' },
+    { label: t('acronyms.mcda'), full: t('acronyms.mcdaFull'), color: 'from-violet-400 to-purple-400', icon: '🎯' }
   ]
 
   return (
@@ -510,7 +512,7 @@ const AcronymsBanner = () => {
       <div className="flex items-center gap-3 mb-3">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-700" />
         <div className="flex items-center gap-2 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-          <span>Key Acronyms</span>
+          <span>{t('acronyms.title')}</span>
         </div>
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-700" />
       </div>
@@ -581,8 +583,8 @@ const MapView = () => {
         toast.innerHTML = `
           <span class="text-xl">📍</span>
           <div>
-            <p class="font-semibold text-sm">Location Updated!</p>
-            <p class="text-xs opacity-90">Node positions refreshed</p>
+            <p class="font-semibold text-sm">${t('qrLocations.updated')}!</p>
+            <p class="text-xs opacity-90">${t('map.waitingForData')}</p>
           </div>
         `
         document.body.appendChild(toast)
@@ -596,7 +598,7 @@ const MapView = () => {
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+  }, [t])
 
   // ============================================================
   // 🔥 TAB FOCUS LISTENER (same tab updates)
@@ -645,8 +647,8 @@ const MapView = () => {
         toast.innerHTML = `
           <span class="text-xl">📍</span>
           <div>
-            <p class="font-semibold text-sm">${data.nodeId} Location Updated!</p>
-            <p class="text-xs opacity-90">Map refreshed automatically</p>
+            <p class="font-semibold text-sm">${data.nodeId} ${t('qrLocations.updated')}!</p>
+            <p class="text-xs opacity-90">${t('map.live')}</p>
           </div>
         `
         document.body.appendChild(toast)
@@ -675,8 +677,8 @@ const MapView = () => {
       toast.innerHTML = `
         <span class="text-xl">🔄</span>
         <div>
-          <p class="font-semibold text-sm">Locations Reset!</p>
-          <p class="text-xs opacity-90">All nodes restored to default positions</p>
+          <p class="font-semibold text-sm">${t('qrLocations.resetAll')}!</p>
+          <p class="text-xs opacity-90">${t('qrLocations.default')}</p>
         </div>
       `
       document.body.appendChild(toast)
@@ -691,7 +693,7 @@ const MapView = () => {
     return () => {
       ably.close()
     }
-  }, [])
+  }, [t])
 
   // ============================================================
   // 🔥 WEB SOCKET
@@ -734,8 +736,8 @@ const MapView = () => {
               toast.innerHTML = `
                 <span class="text-xl">📍</span>
                 <div>
-                  <p class="font-semibold text-sm">${data.nodeId} Location Updated!</p>
-                  <p class="text-xs opacity-90">Map refreshed automatically</p>
+                  <p class="font-semibold text-sm">${data.nodeId} ${t('qrLocations.updated')}!</p>
+                  <p class="text-xs opacity-90">${t('map.live')}</p>
                 </div>
               `
               document.body.appendChild(toast)
@@ -898,7 +900,7 @@ const MapView = () => {
         {/* DATA FLOW LEGEND */}
         <div className="absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50">
           <div className="flex flex-col gap-1.5 text-xs">
-            <div className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">📍 Legend</div>
+            <div className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">📍 {t('map.legend')}</div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30"></span>
               <span className="text-slate-600 dark:text-slate-300">{t('map.sensorNode')}</span>
@@ -909,16 +911,12 @@ const MapView = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/30"></span>
-              <span className="text-slate-600 dark:text-slate-300">Base Station</span>
+              <span className="text-slate-600 dark:text-slate-300">{t('map.baseStation')}</span>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-700 mt-1 pt-1">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-0.5 bg-emerald-400 border-t-2 border-dashed animate-pulse"></span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Data Flow (Sensor01 → Base)</span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="w-6 h-0.5 bg-blue-400 border-t-2 border-dashed animate-pulse"></span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Data Flow (Sensor02 → Base)</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('map.canalPath')}</span>
               </div>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-700 mt-1 pt-1 flex items-center justify-between">

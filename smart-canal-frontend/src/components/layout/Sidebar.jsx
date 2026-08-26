@@ -108,7 +108,7 @@ const Sidebar = () => {
               {!isCollapsed && <span>{t('navigation.mlPredictions')}</span>}
             </NavLink>
 
-            {/* ===== QR LOCATIONS (Separate + Different Color) ===== */}
+            {/* ===== QR LOCATIONS (Updated with Translation) ===== */}
             <NavLink
               to="/admin/locations"
               className={({ isActive }) =>
@@ -118,10 +118,10 @@ const Sidebar = () => {
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-700/80'
                 } ${isCollapsed ? 'justify-center' : ''}`
               }
-              title={isCollapsed ? 'QR Locations' : ''}
+              title={isCollapsed ? t('navigation.qrLocations') : ''}
             >
               <FiMapPin className="text-lg" />
-              {!isCollapsed && <span>QR Locations</span>}
+              {!isCollapsed && <span>{t('navigation.qrLocations')}</span>}
             </NavLink>
           </>
         )}
