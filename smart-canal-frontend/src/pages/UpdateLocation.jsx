@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import * as Ably from 'ably' // 🔥 Ably import
+import * as Ably from 'ably'
 
 // ============================================================
 // WebSocket URL (Same as other pages)
@@ -21,8 +21,8 @@ const UpdateLocation = () => {
 
   // ===== Ably Client Initialization (Phone) =====
   useEffect(() => {
-    // ඔබගේ Ably API Key එක මෙතන දාන්න
-    ablyRef.current = new Ably.Realtime('YOUR_ABLY_API_KEY_HERE')
+    // 🔥🔥 මෙතනට ඔබගේ Root Key එක දාලා තියෙනවා (වෙනස් කරන්න එපා)
+    ablyRef.current = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
     console.log('✅ Ably Client Ready (Phone)')
 
     return () => {

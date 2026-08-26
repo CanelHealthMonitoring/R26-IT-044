@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { IMAGES } from '../assets/images'
-import * as Ably from 'ably' // 🔥 Ably import
+import * as Ably from 'ably'
 
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -617,8 +617,8 @@ const MapView = () => {
   // 🔥 ABLY LISTENER - Map එක Update වෙන්න මේක අවශ්‍යයි
   // ============================================================
   useEffect(() => {
-    // ඔබගේ Ably API Key එක මෙතන දාන්න
-    const ably = new Ably.Realtime('YOUR_ABLY_API_KEY_HERE')
+    // 🔥🔥 මෙතනට ඔබගේ Root Key එක දාලා තියෙනවා (වෙනස් කරන්න එපා)
+    const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
     const channel = ably.channels.get('canal-updates')
 
     channel.subscribe('location-changed', (message) => {
