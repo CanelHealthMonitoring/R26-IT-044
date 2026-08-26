@@ -52,7 +52,7 @@ const getNodeLocations = () => {
 }
 
 // ============================================================
-// DATA FLOW PATHS (node IDs only – coordinates resolved dynamically)
+// DATA FLOW PATHS
 // ============================================================
 const DATA_FLOW_PATHS = [
   {
@@ -92,7 +92,7 @@ const getVal = (obj, key) => {
 }
 
 // ============================================================
-// Animated Data Flow Component – now accepts nodeCoords as prop
+// Animated Data Flow Component
 // ============================================================
 const AnimatedDataFlow = ({ map, paths, nodeCoords }) => {
   const animationRef = useRef(null)
@@ -240,7 +240,7 @@ const AnimatedDataFlow = ({ map, paths, nodeCoords }) => {
 }
 
 // ============================================================
-// Popup builders (now use nodeCoords via closure – but they receive nodeId and data)
+// Popup builders
 // ============================================================
 const buildSensorPopup = (nodeId, data, nodeCoords) => {
   const node = nodeCoords[nodeId]
@@ -391,7 +391,7 @@ const buildTransportPopup = (nodeId, data, nodeCoords) => {
 }
 
 // ============================================================
-// Enhanced Marker Icon Builder (uses nodeCoords for type)
+// Enhanced Marker Icon Builder
 // ============================================================
 const createEnhancedMarker = (nodeId, node, isConnected) => {
   const type = node?.type || 'sensor'
@@ -488,7 +488,7 @@ const createEnhancedMarker = (nodeId, node, isConnected) => {
 }
 
 // ============================================================
-// Acronyms Banner (unchanged)
+// Acronyms Banner
 // ============================================================
 const AcronymsBanner = () => {
   const acronyms = [
@@ -566,30 +566,55 @@ const MapView = () => {
   const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
 
   // ============================================================
-  // TOAST NOTIFICATION
+  // 🔥 FIX: LISTEN FOR localStorage CHANGES (from Admin page)
   // ============================================================
-  const showLocationToast = (nodeId, lat, lng) => {
-    const toast = document.createElement('div')
-    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20 animate-slide-up'
-    toast.innerHTML = `
-      <span class="text-xl">📍</span>
-      <div>
-        <p class="font-semibold text-sm">${nodeId} Location Updated</p>
-        <p class="text-xs opacity-90">${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-      </div>
-      <button onclick="this.parentElement.remove()" class="ml-2 text-white/70 hover:text-white">✕</button>
-    `
-    document.body.appendChild(toast)
-    setTimeout(() => {
-      toast.style.opacity = '0'
-      toast.style.transform = 'translateX(-50%) translateY(20px)'
-      toast.style.transition = 'all 0.5s ease'
-      setTimeout(() => toast.remove(), 600)
-    }, 5000)
-  }
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'node_locations') {
+        const updated = getNodeLocations()
+        setNodeCoords(updated)
+        console.log('🔄 Map updated from localStorage change')
+        
+        // Show toast notification
+        const toast = document.createElement('div')
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
+        toast.innerHTML = `
+          <span class="text-xl">📍</span>
+          <div>
+            <p class="font-semibold text-sm">Location Updated!</p>
+            <p class="text-xs opacity-90">Node positions refreshed</p>
+          </div>
+        `
+        document.body.appendChild(toast)
+        setTimeout(() => {
+          toast.style.opacity = '0'
+          toast.style.transform = 'translateX(-50%) translateY(20px)'
+          toast.style.transition = 'all 0.5s ease'
+          setTimeout(() => toast.remove(), 600)
+        }, 3000)
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
   // ============================================================
-  // WEB SOCKET
+  // 🔥 FIX: Listen for tab focus (same tab updates)
+  // ============================================================
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const updated = getNodeLocations()
+        setNodeCoords(updated)
+        console.log('🔄 Map updated on tab focus')
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // ============================================================
+  // WEB SOCKET - For sensor data only (not location updates)
   // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
@@ -605,43 +630,15 @@ const MapView = () => {
         try {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
-
-          // ===== CHECK FOR LOCATION UPDATE =====
-          if (data.type === 'location-update') {
-            console.log('📍 Location update received:', data.nodeId, data.lat, data.lng)
-            
-            // Update localStorage
-            const saved = localStorage.getItem('node_locations')
-            let nodes = saved ? JSON.parse(saved) : getNodeLocations()
-            
-            if (nodes[data.nodeId]) {
-              nodes[data.nodeId] = {
-                ...nodes[data.nodeId],
-                lat: data.lat,
-                lng: data.lng
-              }
-              // Merge with defaults to keep structure
-              const merged = { ...DEFAULT_NODES, ...nodes }
-              localStorage.setItem('node_locations', JSON.stringify(merged))
-              
-              // Update state to trigger re-render
-              setNodeCoords(merged)
-              setLastUpdated(new Date())
-              
-              // Show toast notification
-              showLocationToast(data.nodeId, data.lat, data.lng)
-            }
-            return
-          }
-
-          // ===== NORMAL SENSOR DATA =====
+          
+          // Sensor data only (location updates handled by localStorage)
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
                 setNodesData(prev => ({ ...prev, [node.nodeId]: node }))
               }
             })
-          } else if (data.nodeId) {
+          } else if (data.nodeId && data.type !== 'location-update') {
             setNodesData(prev => ({ ...prev, [data.nodeId]: data }))
           }
           setLastUpdated(new Date())
@@ -672,29 +669,6 @@ const MapView = () => {
       if (socketRef.current) socketRef.current.close()
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     }
-  }, [])
-
-  // ============================================================
-  // STORAGE & FOCUS LISTENERS
-  // ============================================================
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const updated = getNodeLocations()
-      setNodeCoords(updated)
-    }
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        const updated = getNodeLocations()
-        setNodeCoords(updated)
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const createMarker = (nodeId, node) => {
