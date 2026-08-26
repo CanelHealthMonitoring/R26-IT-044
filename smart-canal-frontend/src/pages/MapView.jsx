@@ -566,7 +566,7 @@ const MapView = () => {
   const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
 
   // ============================================================
-  // 🔥 FIX: LISTEN FOR localStorage CHANGES (from Admin page)
+  // 🔥 STORAGE EVENT LISTENER (localStorage changes from Admin)
   // ============================================================
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -575,7 +575,6 @@ const MapView = () => {
         setNodeCoords(updated)
         console.log('🔄 Map updated from localStorage change')
         
-        // Show toast notification
         const toast = document.createElement('div')
         toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
         toast.innerHTML = `
@@ -599,7 +598,7 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // 🔥 FIX: Listen for tab focus (same tab updates)
+  // 🔥 TAB FOCUS LISTENER (same tab updates)
   // ============================================================
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -614,7 +613,7 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // WEB SOCKET - For sensor data only (not location updates)
+  // 🔥 WEB SOCKET - Listens for both sensor data AND location updates
   // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
@@ -631,14 +630,58 @@ const MapView = () => {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
           
-          // Sensor data only (location updates handled by localStorage)
+          // ============================================================
+          // 🔥 FIX: LISTEN FOR LOCATION UPDATE FROM PHONE
+          // ============================================================
+          if (data.type === 'location-update') {
+            console.log('📍 Location update received:', data.nodeId, data.lat, data.lng)
+            
+            const saved = localStorage.getItem('node_locations')
+            let nodes = saved ? JSON.parse(saved) : getNodeLocations()
+            
+            if (nodes[data.nodeId]) {
+              nodes[data.nodeId] = {
+                ...nodes[data.nodeId],
+                lat: data.lat,
+                lng: data.lng
+              }
+              const merged = { ...DEFAULT_NODES, ...nodes }
+              localStorage.setItem('node_locations', JSON.stringify(merged))
+              
+              setNodeCoords(merged)
+              setLastUpdated(new Date())
+              
+              // Toast notification
+              const toast = document.createElement('div')
+              toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
+              toast.innerHTML = `
+                <span class="text-xl">📍</span>
+                <div>
+                  <p class="font-semibold text-sm">${data.nodeId} Location Updated!</p>
+                  <p class="text-xs opacity-90">Map refreshed automatically</p>
+                </div>
+              `
+              document.body.appendChild(toast)
+              setTimeout(() => {
+                toast.style.opacity = '0'
+                toast.style.transform = 'translateX(-50%) translateY(20px)'
+                toast.style.transition = 'all 0.5s ease'
+                setTimeout(() => toast.remove(), 600)
+              }, 3000)
+            }
+            return
+          }
+          
+          // ============================================================
+          // SENSOR DATA (existing)
+          // ============================================================
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
                 setNodesData(prev => ({ ...prev, [node.nodeId]: node }))
               }
             })
-          } else if (data.nodeId && data.type !== 'location-update') {
+          } else if (data.nodeId) {
             setNodesData(prev => ({ ...prev, [data.nodeId]: data }))
           }
           setLastUpdated(new Date())
