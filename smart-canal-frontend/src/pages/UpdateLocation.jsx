@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import * as Ably from 'ably'
 
 // ============================================================
-// WebSocket URL (Same as other pages)
+// WebSocket URL
 // ============================================================
 const WS_URL = 'wss://zerg0hkzgi.execute-api.eu-north-1.amazonaws.com/production/'
 
@@ -16,12 +16,11 @@ const UpdateLocation = () => {
   const socketRef = useRef(null)
   const [wsConnected, setWsConnected] = useState(false)
   
-  // 🔥 Ably ref
+  // Ably ref
   const ablyRef = useRef(null)
 
   // ===== Ably Client Initialization (Phone) =====
   useEffect(() => {
-    // 🔥🔥 මෙතනට ඔබගේ Root Key එක දාලා තියෙනවා (වෙනස් කරන්න එපා)
     ablyRef.current = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
     console.log('✅ Ably Client Ready (Phone)')
 
@@ -30,7 +29,7 @@ const UpdateLocation = () => {
     }
   }, [])
 
-  // ===== WebSocket Connection (for broadcasting) =====
+  // ===== WebSocket Connection =====
   useEffect(() => {
     if (!nodeId) return
 
@@ -65,7 +64,7 @@ const UpdateLocation = () => {
 
   // ===== Broadcast Location via WebSocket + Ably =====
   const broadcastLocation = (nodeId, lat, lng) => {
-    // 1. WebSocket (පරණ එක)
+    // 1. WebSocket
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       const message = JSON.stringify({
         type: 'location-update',
@@ -79,7 +78,7 @@ const UpdateLocation = () => {
       console.warn('⚠️ WebSocket not connected, cannot broadcast')
     }
 
-    // 2. 🔥🔥 ABLY - මෙයයි MAIN එක
+    // 2. 🔥 ABLY - Main
     if (ablyRef.current) {
       const channel = ablyRef.current.channels.get('canal-updates')
       channel.publish('location-changed', {
@@ -97,7 +96,6 @@ const UpdateLocation = () => {
     const saved = localStorage.getItem('node_locations')
     const nodes = saved ? JSON.parse(saved) : {}
     
-    // Load default nodes if empty
     const DEFAULT_NODES = {
       'Sensor01': { lat: 7.1395, lng: 80.0408, label: 'Sensor Node 01', type: 'sensor' },
       'Sensor02': { lat: 7.1368, lng: 80.0415, label: 'Sensor Node 02', type: 'sensor' },
@@ -144,15 +142,11 @@ const UpdateLocation = () => {
         const { latitude, longitude } = position.coords
         setCoords({ lat: latitude, lng: longitude })
         
-        // 1. Save to localStorage
         saveToLocalStorage(nodeId, latitude, longitude)
-        
-        // 2. Broadcast via WebSocket + Ably
         broadcastLocation(nodeId, latitude, longitude)
         
         setStatus('✅ Location captured! Redirecting...')
         
-        // 3. Redirect back to admin page with coordinates
         setTimeout(() => {
           const redirectUrl = `/admin/locations?update=${nodeId}&lat=${latitude}&lng=${longitude}`
           window.location.href = redirectUrl
@@ -228,7 +222,6 @@ const UpdateLocation = () => {
                 const lat = document.getElementById('manualLat').value
                 const lng = document.getElementById('manualLng').value
                 if (lat && lng) {
-                  // Save manually
                   saveToLocalStorage(nodeId, parseFloat(lat), parseFloat(lng))
                   broadcastLocation(nodeId, parseFloat(lat), parseFloat(lng))
                   window.location.href = `/admin/locations?update=${nodeId}&lat=${lat}&lng=${lng}`
@@ -241,7 +234,6 @@ const UpdateLocation = () => {
           </div>
         )}
 
-        {/* WebSocket Status */}
         <div className="mt-3 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
           {wsConnected ? '📡 Live broadcast enabled' : '📡 Broadcasting offline'}

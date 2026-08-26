@@ -37,7 +37,7 @@ const AdminNodeLocations = () => {
   })
   const [copiedId, setCopiedId] = useState(null)
   const [totalUpdated, setTotalUpdated] = useState(0)
-  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('grid')
   const [activeView, setActiveView] = useState('nodes')
   const [isResetting, setIsResetting] = useState(false)
   const wsSocketRef = useRef(null)
@@ -46,10 +46,10 @@ const AdminNodeLocations = () => {
   // 🔥 ABLY LISTENER - Admin page එක real-time update වෙන්න
   // ============================================================
   useEffect(() => {
-    // 🔥🔥 මෙතනට ඔබගේ Root Key එක දාලා තියෙනවා (වෙනස් කරන්න එපා)
     const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
     const channel = ably.channels.get('canal-updates')
 
+    // Listen for location updates
     channel.subscribe('location-changed', (message) => {
       const data = message.data
       console.log('📍 ABLY Location Update Received in Admin:', data)
@@ -98,7 +98,6 @@ const AdminNodeLocations = () => {
       localStorage.setItem('node_locations', JSON.stringify(updated))
       window.history.replaceState({}, document.title, window.location.pathname)
       
-      // Toast
       const toast = document.createElement('div')
       toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
       toast.innerHTML = `
@@ -121,12 +120,11 @@ const AdminNodeLocations = () => {
   }, [])
 
   // ============================================================
-  // RESET FUNCTION
+  // 🔥🔥 RESET FUNCTION - Ably එකට Reset Message එකත් යවනවා
   // ============================================================
   const resetLocations = () => {
     if (isResetting) return
     
-    // Confirm before reset
     if (!window.confirm('⚠️ Are you sure you want to reset all node locations to default values?')) {
       return
     }
@@ -148,7 +146,16 @@ const AdminNodeLocations = () => {
         }))
       }
 
-      // 4. Show success toast
+      // 🔥🔥 4. NEW: Broadcast reset via Ably - MapView එකටත් Reset එක යවන්න
+      const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+      const channel = ably.channels.get('canal-updates')
+      channel.publish('reset-all', {
+        timestamp: Date.now()
+      })
+      console.log('🔄 Ably reset broadcast sent!')
+      setTimeout(() => ably.close(), 1000)
+
+      // 5. Show success toast
       const toast = document.createElement('div')
       toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
       toast.innerHTML = `
@@ -166,7 +173,7 @@ const AdminNodeLocations = () => {
         setTimeout(() => toast.remove(), 600)
       }, 3000)
 
-      // 5. Force refresh of MapView via storage event
+      // 6. Force refresh via storage event
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'node_locations',
         newValue: JSON.stringify(DEFAULT_NODES)
@@ -204,7 +211,6 @@ const AdminNodeLocations = () => {
             })
           }
           
-          // Handle reset broadcast from other tabs
           if (data.type === 'location-reset') {
             console.log('🔄 Reset broadcast received')
             setNodes(DEFAULT_NODES)

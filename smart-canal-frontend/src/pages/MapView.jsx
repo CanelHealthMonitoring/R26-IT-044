@@ -241,7 +241,7 @@ const AnimatedDataFlow = ({ map, paths, nodeCoords }) => {
 }
 
 // ============================================================
-// Popup builders (ඔබගේ existing popup code එකමයි)
+// Popup builders
 // ============================================================
 const buildSensorPopup = (nodeId, data, nodeCoords) => {
   const node = nodeCoords[nodeId]
@@ -614,13 +614,13 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // 🔥 ABLY LISTENER - Map එක Update වෙන්න මේක අවශ්‍යයි
+  // 🔥 ABLY LISTENER - Map එක Update වෙන්න
   // ============================================================
   useEffect(() => {
-    // 🔥🔥 මෙතනට ඔබගේ Root Key එක දාලා තියෙනවා (වෙනස් කරන්න එපා)
     const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
     const channel = ably.channels.get('canal-updates')
 
+    // Listen for location updates
     channel.subscribe('location-changed', (message) => {
       const data = message.data
       console.log('📍 ABLY Location Update Received in Map:', data)
@@ -640,7 +640,6 @@ const MapView = () => {
         setNodeCoords(merged)
         setLastUpdated(new Date())
 
-        // Toast notification
         const toast = document.createElement('div')
         toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
         toast.innerHTML = `
@@ -660,13 +659,42 @@ const MapView = () => {
       }
     })
 
+    // 🔥🔥 NEW: Listen for RESET from Admin
+    channel.subscribe('reset-all', (message) => {
+      console.log('🔄 ABLY Reset received in Map!')
+      
+      // Reset to default locations
+      const defaultNodes = { ...DEFAULT_NODES }
+      localStorage.setItem('node_locations', JSON.stringify(defaultNodes))
+      setNodeCoords(defaultNodes)
+      setLastUpdated(new Date())
+
+      // Show reset toast
+      const toast = document.createElement('div')
+      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
+      toast.innerHTML = `
+        <span class="text-xl">🔄</span>
+        <div>
+          <p class="font-semibold text-sm">Locations Reset!</p>
+          <p class="text-xs opacity-90">All nodes restored to default positions</p>
+        </div>
+      `
+      document.body.appendChild(toast)
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        toast.style.transform = 'translateX(-50%) translateY(20px)'
+        toast.style.transition = 'all 0.5s ease'
+        setTimeout(() => toast.remove(), 600)
+      }, 3000)
+    })
+
     return () => {
       ably.close()
     }
   }, [])
 
   // ============================================================
-  // 🔥 WEB SOCKET - Listens for both sensor data AND location updates
+  // 🔥 WEB SOCKET
   // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
@@ -683,9 +711,6 @@ const MapView = () => {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
           
-          // ============================================================
-          // 🔥 FIX: LISTEN FOR LOCATION UPDATE FROM PHONE
-          // ============================================================
           if (data.type === 'location-update') {
             console.log('📍 Location update received:', data.nodeId, data.lat, data.lng)
             
@@ -704,7 +729,6 @@ const MapView = () => {
               setNodeCoords(merged)
               setLastUpdated(new Date())
               
-              // Toast notification
               const toast = document.createElement('div')
               toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
               toast.innerHTML = `
@@ -725,9 +749,6 @@ const MapView = () => {
             return
           }
           
-          // ============================================================
-          // SENSOR DATA (existing)
-          // ============================================================
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
