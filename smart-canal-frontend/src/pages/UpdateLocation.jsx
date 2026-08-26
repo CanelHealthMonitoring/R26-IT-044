@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import * as Ably from 'ably' // 🔥 Ably import
 
 // ============================================================
 // WebSocket URL (Same as other pages)
@@ -14,6 +15,20 @@ const UpdateLocation = () => {
   const [coords, setCoords] = useState(null)
   const socketRef = useRef(null)
   const [wsConnected, setWsConnected] = useState(false)
+  
+  // 🔥 Ably ref
+  const ablyRef = useRef(null)
+
+  // ===== Ably Client Initialization (Phone) =====
+  useEffect(() => {
+    // ඔබගේ Ably API Key එක මෙතන දාන්න
+    ablyRef.current = new Ably.Realtime('YOUR_ABLY_API_KEY_HERE')
+    console.log('✅ Ably Client Ready (Phone)')
+
+    return () => {
+      if (ablyRef.current) ablyRef.current.close()
+    }
+  }, [])
 
   // ===== WebSocket Connection (for broadcasting) =====
   useEffect(() => {
@@ -48,8 +63,9 @@ const UpdateLocation = () => {
     }
   }, [nodeId])
 
-  // ===== Broadcast Location via WebSocket =====
+  // ===== Broadcast Location via WebSocket + Ably =====
   const broadcastLocation = (nodeId, lat, lng) => {
+    // 1. WebSocket (පරණ එක)
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       const message = JSON.stringify({
         type: 'location-update',
@@ -58,9 +74,21 @@ const UpdateLocation = () => {
         lng: lng
       })
       socketRef.current.send(message)
-      console.log('📡 Location broadcast sent:', message)
+      console.log('📡 WebSocket broadcast sent:', message)
     } else {
       console.warn('⚠️ WebSocket not connected, cannot broadcast')
+    }
+
+    // 2. 🔥🔥 ABLY - මෙයයි MAIN එක
+    if (ablyRef.current) {
+      const channel = ablyRef.current.channels.get('canal-updates')
+      channel.publish('location-changed', {
+        nodeId: nodeId,
+        lat: lat,
+        lng: lng,
+        timestamp: Date.now()
+      })
+      console.log('✅ Ably broadcast sent!', nodeId, lat, lng)
     }
   }
 
@@ -119,7 +147,7 @@ const UpdateLocation = () => {
         // 1. Save to localStorage
         saveToLocalStorage(nodeId, latitude, longitude)
         
-        // 2. Broadcast via WebSocket
+        // 2. Broadcast via WebSocket + Ably
         broadcastLocation(nodeId, latitude, longitude)
         
         setStatus('✅ Location captured! Redirecting...')

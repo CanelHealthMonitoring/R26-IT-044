@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi'
 import QRCode from 'qrcode.react'
 import { IMAGES } from '../assets/images'
+import * as Ably from 'ably' // 🔥 Ably import
 
 // ============================================================
 // DEFAULT NODE COORDINATES
@@ -40,6 +41,33 @@ const AdminNodeLocations = () => {
   const [activeView, setActiveView] = useState('nodes')
   const [isResetting, setIsResetting] = useState(false)
   const wsSocketRef = useRef(null)
+
+  // ============================================================
+  // 🔥 ABLY LISTENER - Admin page එක real-time update වෙන්න
+  // ============================================================
+  useEffect(() => {
+    // ඔබගේ Ably API Key එක මෙතන දාන්න
+    const ably = new Ably.Realtime('YOUR_ABLY_API_KEY_HERE')
+    const channel = ably.channels.get('canal-updates')
+
+    channel.subscribe('location-changed', (message) => {
+      const data = message.data
+      console.log('📍 ABLY Location Update Received in Admin:', data)
+
+      setNodes(prev => {
+        const updated = { ...prev }
+        if (updated[data.nodeId]) {
+          updated[data.nodeId] = { ...updated[data.nodeId], lat: data.lat, lng: data.lng }
+          localStorage.setItem('node_locations', JSON.stringify(updated))
+        }
+        return updated
+      })
+    })
+
+    return () => {
+      ably.close()
+    }
+  }, [])
 
   // Update count
   useEffect(() => {
