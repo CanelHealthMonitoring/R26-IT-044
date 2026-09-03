@@ -11,12 +11,11 @@
   "demoUser": "user / user123",
 
   "navigation": {
-  "dashboard": "Dashboard",
-  "canalMap": "Canal Map",
-  "seasonAnalysis": "Season Analysis",
-  "reports": "Reports",
-  "mlPredictions": "ML Predictions",
-  "qrLocations": "QR Locations"
+    "dashboard": "Dashboard",
+    "canalMap": "Canal Map",
+    "seasonAnalysis": "Season Analysis",
+    "reports": "Reports",
+    "mlPredictions": "ML Predictions"
   },
 
   "topbar": {
@@ -123,8 +122,6 @@
     "waterFlow": "Water Flow",
     "reservoirLevel": "Reservoir Level",
     "cropArea": "Crop Area",
-    "avgFlow": "Avg Flow",
-    "rainfallIncrease": "Rainfall Increase",
     "monthlyRainfall": "Monthly Rainfall (mm)",
     "monthlyWaterFlow": "Monthly Water Flow",
     "seasonComparison": "Season Comparison",
@@ -136,26 +133,7 @@
     "importanceOfPlanning": "Importance of Seasonal Planning",
     "insightText": "Understanding the Yala and Maha seasons is crucial for farmers, water resource managers, and policymakers. The distinct rainfall patterns determine cropping cycles, reservoir storage strategies, and irrigation scheduling.",
     "seasonalInsight": "Seasonal Insight",
-    "yalaDescription": "The Yala season is the main dry season in Sri Lanka, typically lasting from May to August. During this time, rainfall is significantly lower, and water availability becomes a critical factor for agriculture. Farmers rely heavily on irrigation systems to sustain crops, especially paddy and other cash crops. The season demands efficient water management and crop selection adapted to dry conditions.",
-    "mahaDescription": "The Maha season is the main rainy season in Sri Lanka, spanning from September to March. This period brings heavy rainfall, replenishing reservoirs and rivers, and providing abundant water for irrigation. It is the primary cultivation season for paddy, with large areas of land under cultivation. However, excessive rainfall can also lead to flooding, requiring careful water management and drainage.",
-    "yalaChar1": "Low rainfall (average 120-150 mm)",
-    "yalaChar2": "Reduced canal water flow",
-    "yalaChar3": "High evaporation rates",
-    "yalaChar4": "Increased reliance on irrigation",
-    "yalaChar5": "Crop water stress possible",
-    "yalaStrat1": "Efficient water use practices",
-    "yalaStrat2": "Crop selection for dry conditions",
-    "yalaStrat3": "Scheduled irrigation rotations",
-    "yalaStrat4": "Rainwater harvesting",
-    "mahaChar1": "High rainfall (average 250-300 mm)",
-    "mahaChar2": "Increased canal water flow",
-    "mahaChar3": "Reservoir levels rise significantly",
-    "mahaChar4": "Risk of flooding in low-lying areas",
-    "mahaChar5": "Ideal for paddy cultivation",
-    "mahaStrat1": "Flood control measures",
-    "mahaStrat2": "Optimizing reservoir storage",
-    "mahaStrat3": "Crop planning to align with rains",
-    "mahaStrat4": "Drainage management"
+    "rainfallIncrease": "Rainfall Increase"
   },
 
   "report": {
@@ -195,12 +173,6 @@
     "predictBtn": "Predict Infrastructure Health",
     "analyzing": "Analyzing...",
     "predictedStatus": "Predicted Status",
-    "predictedStatusLabel": "PREDICTED STATUS",
-    "healthStatusReference": "HEALTH STATUS REFERENCE",
-    "metricsCount": "8 Metrics",
-    "allMetricsLive": "All metrics are live",
-    "infrastructureMonitoring": "ML Infrastructure Monitoring",
-    "realAwsData": "100% Real AWS Data + ML",
     "classes": {
       "Healthy": {
         "label": "Healthy",
@@ -236,53 +208,8 @@
     "invalidInput": "Please enter valid numbers for all fields"
   },
 
-  "qrLocations": {
-    "title": "Node Location Setup",
-    "subtitle": "Scan QR codes with your phone to update node locations via GPS",
-    "manager": "📍 Node Location Manager",
-    "resetAll": "Reset All",
-    "resetting": "Resetting...",
-    "phoneSetup": "Phone Setup",
-    "totalNodes": "Total Nodes",
-    "updated": "Updated",
-    "default": "Default",
-    "statusLive": "Live",
-    "sensorNodes": "Sensor Nodes",
-    "transportNodes": "Transport Nodes",
-    "baseStation": "Base Station",
-    "environmentalPoints": "Environmental data collection points",
-    "dataRelay": "Data relay nodes in the mesh network",
-    "centralHub": "Central data aggregation hub",
-    "instructions": "How to Update Node Locations",
-    "steps": "4 Steps",
-    "step1": "Open on Phone",
-    "step1Desc": "Open this page on your phone browser",
-    "step2": "Scan QR Code",
-    "step2Desc": "Scan the QR for the node you want",
-    "step3": "Allow GPS",
-    "step3Desc": "Grant location permission when prompted",
-    "step4": "Auto-Update",
-    "step4Desc": "Location updates instantly on map",
-    "tip": "For local development, ensure PC and phone are on the same Wi-Fi network.",
-    "resetInfo": "Click the \"Reset All\" button in the header to restore all nodes to default locations.",
-    "footer": "Node Location Manager"
-  },
-
-  "acronyms": {
-    "title": "Key Acronyms",
-    "chi": "CHI",
-    "cwqi": "CWQI",
-    "rssi": "RSSI",
-    "snr": "SNR",
-    "mcda": "MCDA",
-    "chiFull": "Canal Health Index",
-    "cwqiFull": "Canal Water Quality Index",
-    "rssiFull": "Received Signal Strength Indicator",
-    "snrFull": "Signal to Noise Ratio",
-    "mcdaFull": "Multi Criteria Decision Analysis"
-  },
-
   "notFound": "404 – Page Not Found",
+
   "seasonLabels": {
     "month": "Month",
     "chi": "CHI",

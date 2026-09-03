@@ -191,14 +191,14 @@ const AdminDashboard = () => {
                 {t('admin.title')}
               </h1>
               <p className="mt-2 text-white/80 max-w-lg text-sm leading-relaxed">
-                {t('admin.referenceTitle')} · 
-                {error ? ' 🔴 Offline' : ' 🟢 Live Predictions'}
+                Real-time ML-powered system health monitoring · 
+                {error ? ' 🔴 ' + t('dashboard.offline') : ' 🟢 Live Predictions'}
               </p>
             </div>
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10">
               <FiClock className="text-emerald-300" />
               <span className="text-sm font-medium text-white/90">
-                {isRefreshing ? t('admin.analyzing') : 'Auto 5s'}
+                {isRefreshing ? 'Analyzing...' : 'Auto 5s'}
               </span>
               {lastUpdated && (
                 <span className="text-xs text-white/60 border-l border-white/20 pl-3">
@@ -244,10 +244,10 @@ const AdminDashboard = () => {
                 <statusInfo.icon className="text-4xl md:text-5xl" style={{ color: statusInfo.color }} />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('admin.predictedStatusLabel')}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">PREDICTED STATUS</p>
                 <div className="flex flex-wrap items-center justify-between gap-3 mt-1 w-full">
                   <h2 className="text-3xl md:text-4xl font-bold" style={{ color: statusInfo.color }}>
-                    {loading && !prediction ? t('admin.analyzing') : (prediction?.status || 'Unknown')}
+                    {loading && !prediction ? 'Analyzing...' : (prediction?.status || 'Unknown')}
                   </h2>
                   <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${statusInfo.border} ${statusInfo.bg} inline-flex items-center gap-1.5 shrink-0`}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusInfo.color }} />
@@ -256,7 +256,7 @@ const AdminDashboard = () => {
                 </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-blue-500 animate-pulse' : 'bg-emerald-400'}`} />
-                  {isRefreshing ? '⏳ Analyzing...' : `${t('report.generated')}: ${lastUpdated?.toLocaleTimeString() || 'N/A'}`}
+                  {isRefreshing ? '⏳ Analyzing...' : `Last diagnosis: ${lastUpdated?.toLocaleTimeString() || 'N/A'}`}
                 </p>
               </div>
             </div>
@@ -274,7 +274,7 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-lg">📊</span>
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{t('admin.healthStatusReference')}</h3>
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">HEALTH STATUS REFERENCE</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(CLASS_MAP).map(([status, info]) => {
@@ -323,10 +323,10 @@ const AdminDashboard = () => {
             <div className="p-2 rounded-xl bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-slate-400">
               <FiBarChart2 className="text-lg" />
             </div>
-            <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300">{t('admin.systemMetrics')}</h3>
-            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{t('admin.metricsCount')}</span>
+            <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300">Current System Metrics</h3>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">8 Metrics</span>
             {lastUpdated && (
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">{t('dashboard.updated')}: {lastUpdated.toLocaleTimeString()}</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">Updated: {lastUpdated.toLocaleTimeString()}</span>
             )}
           </div>
 
@@ -381,7 +381,7 @@ const AdminDashboard = () => {
 
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              {isRefreshing ? '🔄 Refreshing...' : `✅ ${t('admin.allMetricsLive')}`}
+              {isRefreshing ? '🔄 Refreshing...' : '✅ All metrics are live'}
             </span>
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
               {Object.keys(metrics || {}).length}/8 active
@@ -399,12 +399,12 @@ const AdminDashboard = () => {
         <p className="flex items-center justify-center gap-2 flex-wrap">
           <span>© 2026 CanalIQ</span>
           <span className="hidden sm:inline">•</span>
-          <span>{t('admin.infrastructureMonitoring')}</span>
+          <span>ML Infrastructure Monitoring</span>
           <span className="hidden sm:inline">•</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">{t('admin.realAwsData')}</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-medium">100% Real AWS Data + ML</span>
           <span className="hidden sm:inline">•</span>
           <span className="text-slate-400 dark:text-slate-500">
-            {lastUpdated ? `${t('report.generated')}: ${lastUpdated.toLocaleString()}` : 'Waiting for data...'}
+            {lastUpdated ? `Last scan: ${lastUpdated.toLocaleString()}` : 'Waiting for data...'}
           </span>
         </p>
       </motion.div>

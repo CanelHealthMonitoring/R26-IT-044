@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import * as Ably from 'ably'
 
 // ============================================================
-// WebSocket URL
+// WebSocket URL (Same as other pages)
 // ============================================================
 const WS_URL = 'wss://zerg0hkzgi.execute-api.eu-north-1.amazonaws.com/production/'
 
@@ -15,21 +14,8 @@ const UpdateLocation = () => {
   const [coords, setCoords] = useState(null)
   const socketRef = useRef(null)
   const [wsConnected, setWsConnected] = useState(false)
-  
-  // Ably ref
-  const ablyRef = useRef(null)
 
-  // ===== Ably Client Initialization (Phone) =====
-  useEffect(() => {
-    ablyRef.current = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
-    console.log('✅ Ably Client Ready (Phone)')
-
-    return () => {
-      if (ablyRef.current) ablyRef.current.close()
-    }
-  }, [])
-
-  // ===== WebSocket Connection =====
+  // ===== WebSocket Connection (for broadcasting) =====
   useEffect(() => {
     if (!nodeId) return
 
@@ -62,9 +48,8 @@ const UpdateLocation = () => {
     }
   }, [nodeId])
 
-  // ===== Broadcast Location via WebSocket + Ably =====
+  // ===== Broadcast Location via WebSocket =====
   const broadcastLocation = (nodeId, lat, lng) => {
-    // 1. WebSocket
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       const message = JSON.stringify({
         type: 'location-update',
@@ -73,21 +58,9 @@ const UpdateLocation = () => {
         lng: lng
       })
       socketRef.current.send(message)
-      console.log('📡 WebSocket broadcast sent:', message)
+      console.log('📡 Location broadcast sent:', message)
     } else {
       console.warn('⚠️ WebSocket not connected, cannot broadcast')
-    }
-
-    // 2. 🔥 ABLY - Main
-    if (ablyRef.current) {
-      const channel = ablyRef.current.channels.get('canal-updates')
-      channel.publish('location-changed', {
-        nodeId: nodeId,
-        lat: lat,
-        lng: lng,
-        timestamp: Date.now()
-      })
-      console.log('✅ Ably broadcast sent!', nodeId, lat, lng)
     }
   }
 
@@ -96,6 +69,7 @@ const UpdateLocation = () => {
     const saved = localStorage.getItem('node_locations')
     const nodes = saved ? JSON.parse(saved) : {}
     
+    // Load default nodes if empty
     const DEFAULT_NODES = {
       'Sensor01': { lat: 7.1395, lng: 80.0408, label: 'Sensor Node 01', type: 'sensor' },
       'Sensor02': { lat: 7.1368, lng: 80.0415, label: 'Sensor Node 02', type: 'sensor' },
@@ -142,11 +116,15 @@ const UpdateLocation = () => {
         const { latitude, longitude } = position.coords
         setCoords({ lat: latitude, lng: longitude })
         
+        // 1. Save to localStorage
         saveToLocalStorage(nodeId, latitude, longitude)
+        
+        // 2. Broadcast via WebSocket
         broadcastLocation(nodeId, latitude, longitude)
         
         setStatus('✅ Location captured! Redirecting...')
         
+        // 3. Redirect back to admin page with coordinates
         setTimeout(() => {
           const redirectUrl = `/admin/locations?update=${nodeId}&lat=${latitude}&lng=${longitude}`
           window.location.href = redirectUrl
@@ -222,6 +200,7 @@ const UpdateLocation = () => {
                 const lat = document.getElementById('manualLat').value
                 const lng = document.getElementById('manualLng').value
                 if (lat && lng) {
+                  // Save manually
                   saveToLocalStorage(nodeId, parseFloat(lat), parseFloat(lng))
                   broadcastLocation(nodeId, parseFloat(lat), parseFloat(lng))
                   window.location.href = `/admin/locations?update=${nodeId}&lat=${lat}&lng=${lng}`
@@ -234,6 +213,7 @@ const UpdateLocation = () => {
           </div>
         )}
 
+        {/* WebSocket Status */}
         <div className="mt-3 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
           {wsConnected ? '📡 Live broadcast enabled' : '📡 Broadcasting offline'}

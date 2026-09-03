@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { IMAGES } from '../assets/images'
-import * as Ably from 'ably'
 
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -489,17 +488,15 @@ const createEnhancedMarker = (nodeId, node, isConnected) => {
 }
 
 // ============================================================
-// Acronyms Banner - Updated with Translation
+// Acronyms Banner
 // ============================================================
 const AcronymsBanner = () => {
-  const { t } = useTranslation()
-  
   const acronyms = [
-    { label: t('acronyms.chi'), full: t('acronyms.chiFull'), color: 'from-emerald-400 to-teal-400', icon: '📊' },
-    { label: t('acronyms.cwqi'), full: t('acronyms.cwqiFull'), color: 'from-cyan-400 to-blue-400', icon: '💧' },
-    { label: t('acronyms.rssi'), full: t('acronyms.rssiFull'), color: 'from-orange-400 to-amber-400', icon: '📡' },
-    { label: t('acronyms.snr'), full: t('acronyms.snrFull'), color: 'from-rose-400 to-pink-400', icon: '🔊' },
-    { label: t('acronyms.mcda'), full: t('acronyms.mcdaFull'), color: 'from-violet-400 to-purple-400', icon: '🎯' }
+    { label: 'CHI', full: 'Canal Health Index', color: 'from-emerald-400 to-teal-400' },
+    { label: 'CWQI', full: 'Canal Water Quality Index', color: 'from-cyan-400 to-blue-400' },
+    { label: 'RSSI', full: 'Received Signal Strength Indicator', color: 'from-orange-400 to-amber-400' },
+    { label: 'SNR', full: 'Signal to Noise Ratio', color: 'from-rose-400 to-pink-400' },
+    { label: 'MCDA', full: 'Multi Criteria Decision Analysis', color: 'from-violet-400 to-purple-400' }
   ]
 
   return (
@@ -512,7 +509,7 @@ const AcronymsBanner = () => {
       <div className="flex items-center gap-3 mb-3">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-700" />
         <div className="flex items-center gap-2 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-          <span>{t('acronyms.title')}</span>
+          <span>Key Acronyms</span>
         </div>
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-700" />
       </div>
@@ -569,7 +566,7 @@ const MapView = () => {
   const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
 
   // ============================================================
-  // 🔥 STORAGE EVENT LISTENER (localStorage changes from Admin)
+  // 🔥 FIX: LISTEN FOR localStorage CHANGES (from Admin page)
   // ============================================================
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -578,13 +575,14 @@ const MapView = () => {
         setNodeCoords(updated)
         console.log('🔄 Map updated from localStorage change')
         
+        // Show toast notification
         const toast = document.createElement('div')
         toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
         toast.innerHTML = `
           <span class="text-xl">📍</span>
           <div>
-            <p class="font-semibold text-sm">${t('qrLocations.updated')}!</p>
-            <p class="text-xs opacity-90">${t('map.waitingForData')}</p>
+            <p class="font-semibold text-sm">Location Updated!</p>
+            <p class="text-xs opacity-90">Node positions refreshed</p>
           </div>
         `
         document.body.appendChild(toast)
@@ -598,10 +596,10 @@ const MapView = () => {
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [t])
+  }, [])
 
   // ============================================================
-  // 🔥 TAB FOCUS LISTENER (same tab updates)
+  // 🔥 FIX: Listen for tab focus (same tab updates)
   // ============================================================
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -616,87 +614,7 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // 🔥 ABLY LISTENER - Map එක Update වෙන්න
-  // ============================================================
-  useEffect(() => {
-    const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
-    const channel = ably.channels.get('canal-updates')
-
-    // Listen for location updates
-    channel.subscribe('location-changed', (message) => {
-      const data = message.data
-      console.log('📍 ABLY Location Update Received in Map:', data)
-
-      const saved = localStorage.getItem('node_locations')
-      let nodes = saved ? JSON.parse(saved) : getNodeLocations()
-
-      if (nodes[data.nodeId]) {
-        nodes[data.nodeId] = {
-          ...nodes[data.nodeId],
-          lat: data.lat,
-          lng: data.lng
-        }
-        const merged = { ...DEFAULT_NODES, ...nodes }
-        localStorage.setItem('node_locations', JSON.stringify(merged))
-
-        setNodeCoords(merged)
-        setLastUpdated(new Date())
-
-        const toast = document.createElement('div')
-        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
-        toast.innerHTML = `
-          <span class="text-xl">📍</span>
-          <div>
-            <p class="font-semibold text-sm">${data.nodeId} ${t('qrLocations.updated')}!</p>
-            <p class="text-xs opacity-90">${t('map.live')}</p>
-          </div>
-        `
-        document.body.appendChild(toast)
-        setTimeout(() => {
-          toast.style.opacity = '0'
-          toast.style.transform = 'translateX(-50%) translateY(20px)'
-          toast.style.transition = 'all 0.5s ease'
-          setTimeout(() => toast.remove(), 600)
-        }, 3000)
-      }
-    })
-
-    // 🔥🔥 NEW: Listen for RESET from Admin
-    channel.subscribe('reset-all', (message) => {
-      console.log('🔄 ABLY Reset received in Map!')
-      
-      // Reset to default locations
-      const defaultNodes = { ...DEFAULT_NODES }
-      localStorage.setItem('node_locations', JSON.stringify(defaultNodes))
-      setNodeCoords(defaultNodes)
-      setLastUpdated(new Date())
-
-      // Show reset toast
-      const toast = document.createElement('div')
-      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
-      toast.innerHTML = `
-        <span class="text-xl">🔄</span>
-        <div>
-          <p class="font-semibold text-sm">${t('qrLocations.resetAll')}!</p>
-          <p class="text-xs opacity-90">${t('qrLocations.default')}</p>
-        </div>
-      `
-      document.body.appendChild(toast)
-      setTimeout(() => {
-        toast.style.opacity = '0'
-        toast.style.transform = 'translateX(-50%) translateY(20px)'
-        toast.style.transition = 'all 0.5s ease'
-        setTimeout(() => toast.remove(), 600)
-      }, 3000)
-    })
-
-    return () => {
-      ably.close()
-    }
-  }, [t])
-
-  // ============================================================
-  // 🔥 WEB SOCKET
+  // WEB SOCKET - For sensor data only (not location updates)
   // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
@@ -713,51 +631,14 @@ const MapView = () => {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
           
-          if (data.type === 'location-update') {
-            console.log('📍 Location update received:', data.nodeId, data.lat, data.lng)
-            
-            const saved = localStorage.getItem('node_locations')
-            let nodes = saved ? JSON.parse(saved) : getNodeLocations()
-            
-            if (nodes[data.nodeId]) {
-              nodes[data.nodeId] = {
-                ...nodes[data.nodeId],
-                lat: data.lat,
-                lng: data.lng
-              }
-              const merged = { ...DEFAULT_NODES, ...nodes }
-              localStorage.setItem('node_locations', JSON.stringify(merged))
-              
-              setNodeCoords(merged)
-              setLastUpdated(new Date())
-              
-              const toast = document.createElement('div')
-              toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
-              toast.innerHTML = `
-                <span class="text-xl">📍</span>
-                <div>
-                  <p class="font-semibold text-sm">${data.nodeId} ${t('qrLocations.updated')}!</p>
-                  <p class="text-xs opacity-90">${t('map.live')}</p>
-                </div>
-              `
-              document.body.appendChild(toast)
-              setTimeout(() => {
-                toast.style.opacity = '0'
-                toast.style.transform = 'translateX(-50%) translateY(20px)'
-                toast.style.transition = 'all 0.5s ease'
-                setTimeout(() => toast.remove(), 600)
-              }, 3000)
-            }
-            return
-          }
-          
+          // Sensor data only (location updates handled by localStorage)
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
                 setNodesData(prev => ({ ...prev, [node.nodeId]: node }))
               }
             })
-          } else if (data.nodeId) {
+          } else if (data.nodeId && data.type !== 'location-update') {
             setNodesData(prev => ({ ...prev, [data.nodeId]: data }))
           }
           setLastUpdated(new Date())
@@ -900,7 +781,7 @@ const MapView = () => {
         {/* DATA FLOW LEGEND */}
         <div className="absolute bottom-6 left-6 z-[1000] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50">
           <div className="flex flex-col gap-1.5 text-xs">
-            <div className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">📍 {t('map.legend')}</div>
+            <div className="font-semibold text-slate-700 dark:text-slate-200 mb-0.5">📍 Legend</div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30"></span>
               <span className="text-slate-600 dark:text-slate-300">{t('map.sensorNode')}</span>
@@ -911,12 +792,16 @@ const MapView = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/30"></span>
-              <span className="text-slate-600 dark:text-slate-300">{t('map.baseStation')}</span>
+              <span className="text-slate-600 dark:text-slate-300">Base Station</span>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-700 mt-1 pt-1">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-0.5 bg-emerald-400 border-t-2 border-dashed animate-pulse"></span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">{t('map.canalPath')}</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Data Flow (Sensor01 → Base)</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="w-6 h-0.5 bg-blue-400 border-t-2 border-dashed animate-pulse"></span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Data Flow (Sensor02 → Base)</span>
               </div>
             </div>
             <div className="border-t border-slate-200 dark:border-slate-700 mt-1 pt-1 flex items-center justify-between">

@@ -440,7 +440,7 @@ const Dashboard = () => {
               <FiActivity className="text-lg" />
             </div>
             <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
-              {t('node.canalHealth')}
+              Canal Health Metrics
             </h3>
             <span className="ml-auto text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-gray-700/70 px-3 py-1 rounded-full border border-slate-200 dark:border-gray-600">
               CHI · CWQI
@@ -449,6 +449,7 @@ const Dashboard = () => {
         </div>
 
         <div className="p-6">
+          {/* Using flex to center the two boxes */}
           <div className="flex flex-wrap justify-center gap-5">
             {sensorData.length === 0 ? (
               <div className="w-full text-center py-8 text-slate-400 dark:text-slate-500 text-sm">
@@ -463,6 +464,7 @@ const Dashboard = () => {
                     key={node.nodeId}
                     className="group relative bg-slate-50 dark:bg-gray-700/50 rounded-xl p-6 border border-slate-200 dark:border-gray-600 hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-200 w-full sm:w-72 md:w-80 lg:w-80"
                   >
+                    {/* Node label and timestamp - centered */}
                     <div className="flex flex-col items-center mb-4">
                       <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                         {node.label}
@@ -472,10 +474,11 @@ const Dashboard = () => {
                       </span>
                     </div>
 
+                    {/* Large CHI and CWQI values side by side */}
                     <div className="flex items-center justify-around gap-6">
                       <div className="text-center">
                         <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                          {t('node.chi')}
+                          CHI
                         </p>
                         <p className={`text-4xl font-bold ${getMetricColor(node.chi)}`}>
                           {node.chi}
@@ -483,7 +486,7 @@ const Dashboard = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                          {t('node.cwqi')}
+                          CWQI
                         </p>
                         <p className={`text-4xl font-bold ${getMetricColor(node.cwqi)}`}>
                           {node.cwqi}
@@ -491,6 +494,7 @@ const Dashboard = () => {
                       </div>
                     </div>
 
+                    {/* Thin progress bars */}
                     <div className="mt-4 space-y-1.5">
                       {!isNaN(chiNum) && (
                         <div className="w-full h-1 bg-slate-200 dark:bg-gray-600 rounded-full overflow-hidden">
@@ -686,7 +690,7 @@ const Dashboard = () => {
       <br></br>
 
       {/* ============================================================ */}
-      {/* 4. KEY ACRONYMS - Updated with Translation */}
+      {/* 4. KEY ACRONYMS */}
       {/* ============================================================ */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
@@ -701,7 +705,7 @@ const Dashboard = () => {
                 <FiInfo className="text-lg" />
               </div>
               <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                {t('acronyms.title')}
+                Key Acronyms
               </h3>
             </div>
             <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-gray-700/70 px-3 py-1 rounded-full border border-slate-200 dark:border-gray-600">
@@ -718,9 +722,9 @@ const Dashboard = () => {
                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                   <FiBarChart2 size={16} />
                 </div>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{t('acronyms.chi')}</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">CHI</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{t('acronyms.chiFull')}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Canal Health Index</p>
             </div>
 
             {/* CWQI */}
@@ -729,9 +733,9 @@ const Dashboard = () => {
                 <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                   <FiDroplet size={16} />
                 </div>
-                <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">{t('acronyms.cwqi')}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400 text-sm">CWQI</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{t('acronyms.cwqiFull')}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Canal Water Quality Index</p>
             </div>
 
             {/* RSSI */}
@@ -740,9 +744,9 @@ const Dashboard = () => {
                 <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                   <FiWifi size={16} />
                 </div>
-                <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">{t('acronyms.rssi')}</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">RSSI</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{t('acronyms.rssiFull')}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Received Signal Strength</p>
             </div>
 
             {/* SNR */}
@@ -751,9 +755,9 @@ const Dashboard = () => {
                 <div className="p-2 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400">
                   <FiActivity size={16} />
                 </div>
-                <span className="font-bold text-cyan-600 dark:text-cyan-400 text-sm">{t('acronyms.snr')}</span>
+                <span className="font-bold text-cyan-600 dark:text-cyan-400 text-sm">SNR</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{t('acronyms.snrFull')}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Signal to Noise Ratio</p>
             </div>
 
             {/* MCDA */}
@@ -762,9 +766,9 @@ const Dashboard = () => {
                 <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                   <FiAnchor size={16} />
                 </div>
-                <span className="font-bold text-purple-600 dark:text-purple-400 text-sm">{t('acronyms.mcda')}</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400 text-sm">MCDA</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{t('acronyms.mcdaFull')}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Multi‑Criteria Decision Analysis</p>
             </div>
           </div>
         </div>

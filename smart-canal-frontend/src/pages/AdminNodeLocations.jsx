@@ -8,8 +8,6 @@ import {
 } from 'react-icons/fi'
 import QRCode from 'qrcode.react'
 import { IMAGES } from '../assets/images'
-import * as Ably from 'ably'
-import { useTranslation } from 'react-i18next'
 
 // ============================================================
 // DEFAULT NODE COORDINATES
@@ -32,44 +30,16 @@ const WS_URL = 'wss://zerg0hkzgi.execute-api.eu-north-1.amazonaws.com/production
 // MAIN COMPONENT
 // ============================================================
 const AdminNodeLocations = () => {
-  const { t } = useTranslation()
   const [nodes, setNodes] = useState(() => {
     const saved = localStorage.getItem('node_locations')
     return saved ? JSON.parse(saved) : DEFAULT_NODES
   })
   const [copiedId, setCopiedId] = useState(null)
   const [totalUpdated, setTotalUpdated] = useState(0)
-  const [viewMode, setViewMode] = useState('grid')
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
   const [activeView, setActiveView] = useState('nodes')
   const [isResetting, setIsResetting] = useState(false)
   const wsSocketRef = useRef(null)
-
-  // ============================================================
-  // 🔥 ABLY LISTENER - Admin page එක real-time update වෙන්න
-  // ============================================================
-  useEffect(() => {
-    const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
-    const channel = ably.channels.get('canal-updates')
-
-    // Listen for location updates
-    channel.subscribe('location-changed', (message) => {
-      const data = message.data
-      console.log('📍 ABLY Location Update Received in Admin:', data)
-
-      setNodes(prev => {
-        const updated = { ...prev }
-        if (updated[data.nodeId]) {
-          updated[data.nodeId] = { ...updated[data.nodeId], lat: data.lat, lng: data.lng }
-          localStorage.setItem('node_locations', JSON.stringify(updated))
-        }
-        return updated
-      })
-    })
-
-    return () => {
-      ably.close()
-    }
-  }, [])
 
   // Update count
   useEffect(() => {
@@ -100,6 +70,7 @@ const AdminNodeLocations = () => {
       localStorage.setItem('node_locations', JSON.stringify(updated))
       window.history.replaceState({}, document.title, window.location.pathname)
       
+      // Toast
       const toast = document.createElement('div')
       toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
       toast.innerHTML = `
@@ -122,11 +93,12 @@ const AdminNodeLocations = () => {
   }, [])
 
   // ============================================================
-  // 🔥🔥 RESET FUNCTION - Ably එකට Reset Message එකත් යවනවා
+  // RESET FUNCTION
   // ============================================================
   const resetLocations = () => {
     if (isResetting) return
     
+    // Confirm before reset
     if (!window.confirm('⚠️ Are you sure you want to reset all node locations to default values?')) {
       return
     }
@@ -148,16 +120,7 @@ const AdminNodeLocations = () => {
         }))
       }
 
-      // 🔥🔥 4. NEW: Broadcast reset via Ably - MapView එකටත් Reset එක යවන්න
-      const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
-      const channel = ably.channels.get('canal-updates')
-      channel.publish('reset-all', {
-        timestamp: Date.now()
-      })
-      console.log('🔄 Ably reset broadcast sent!')
-      setTimeout(() => ably.close(), 1000)
-
-      // 5. Show success toast
+      // 4. Show success toast
       const toast = document.createElement('div')
       toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
       toast.innerHTML = `
@@ -175,7 +138,7 @@ const AdminNodeLocations = () => {
         setTimeout(() => toast.remove(), 600)
       }, 3000)
 
-      // 6. Force refresh via storage event
+      // 5. Force refresh of MapView via storage event
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'node_locations',
         newValue: JSON.stringify(DEFAULT_NODES)
@@ -213,6 +176,7 @@ const AdminNodeLocations = () => {
             })
           }
           
+          // Handle reset broadcast from other tabs
           if (data.type === 'location-reset') {
             console.log('🔄 Reset broadcast received')
             setNodes(DEFAULT_NODES)
@@ -272,22 +236,22 @@ const AdminNodeLocations = () => {
   }
 
   const getTypeTitle = (type) => {
-    if (type === 'sensor') return t('qrLocations.sensorNodes')
-    if (type === 'transport') return t('qrLocations.transportNodes')
-    return t('qrLocations.baseStation')
+    if (type === 'sensor') return 'Sensor Nodes'
+    if (type === 'transport') return 'Transport Nodes'
+    return 'Base Station'
   }
 
   const getTypeDescription = (type) => {
-    if (type === 'sensor') return t('qrLocations.environmentalPoints')
-    if (type === 'transport') return t('qrLocations.dataRelay')
-    return t('qrLocations.centralHub')
+    if (type === 'sensor') return 'Environmental data collection points'
+    if (type === 'transport') return 'Data relay nodes in the mesh network'
+    return 'Central data aggregation hub'
   }
 
   const statCards = [
-    { icon: FiMapPin, label: t('qrLocations.totalNodes'), value: Object.keys(nodes).length, color: 'emerald' },
-    { icon: FiGlobe, label: t('qrLocations.updated'), value: totalUpdated, color: 'blue' },
-    { icon: FiRefreshCw, label: t('qrLocations.default'), value: Object.keys(nodes).length - totalUpdated, color: 'purple' },
-    { icon: FiWifi, label: t('qrLocations.statusLive'), value: 'Live', color: 'emerald' }
+    { icon: FiMapPin, label: 'Total Nodes', value: Object.keys(nodes).length, color: 'emerald' },
+    { icon: FiGlobe, label: 'Updated', value: totalUpdated, color: 'blue' },
+    { icon: FiRefreshCw, label: 'Default', value: Object.keys(nodes).length - totalUpdated, color: 'purple' },
+    { icon: FiWifi, label: 'Status', value: 'Live', color: 'emerald' }
   ]
 
   return (
@@ -313,24 +277,25 @@ const AdminNodeLocations = () => {
             <div>
               <div className="flex items-center gap-2 text-sm font-medium text-emerald-300 mb-2">
                 <FiMapPin className="text-emerald-400" />
-                <span>{t('qrLocations.manager')}</span>
+                <span>📍 Node Location Manager</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
-                  {Object.keys(nodes).length} {t('qrLocations.totalNodes')}
+                  {Object.keys(nodes).length} Nodes
                 </span>
                 {totalUpdated > 0 && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-200 border border-amber-400/30">
-                    {totalUpdated} {t('qrLocations.updated')}
+                    {totalUpdated} Updated
                   </span>
                 )}
               </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                {t('qrLocations.title')}
+                Node Location Setup
               </h1>
               <p className="mt-2 text-white/80 max-w-lg text-sm leading-relaxed">
-                {t('qrLocations.subtitle')}
+                Scan QR codes with your phone to update node locations via GPS
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* ===== RESET BUTTON ===== */}
               <button
                 onClick={resetLocations}
                 disabled={isResetting}
@@ -341,12 +306,12 @@ const AdminNodeLocations = () => {
                 }`}
               >
                 <FiRotateCcw className={isResetting ? 'animate-spin' : ''} size={16} />
-                {isResetting ? t('qrLocations.resetting') : t('qrLocations.resetAll')}
+                {isResetting ? 'Resetting...' : 'Reset All'}
               </button>
 
               <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10">
                 <FiSmartphone className="text-emerald-300" />
-                <span className="text-sm font-medium text-white/90">{t('qrLocations.phoneSetup')}</span>
+                <span className="text-sm font-medium text-white/90">Phone Setup</span>
               </div>
             </div>
           </div>
@@ -607,16 +572,17 @@ const AdminNodeLocations = () => {
             transition={{ duration: 0.2 }}
             className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden"
           >
+            {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/10 dark:to-teal-900/10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                   <FiSmartphone className="text-lg" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">
-                  {t('qrLocations.instructions')}
+                  How to Update Node Locations
                 </h3>
                 <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-                  {t('qrLocations.steps')}
+                  4 Steps
                 </span>
               </div>
             </div>
@@ -624,10 +590,10 @@ const AdminNodeLocations = () => {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { step: '1', key: 'step1', descKey: 'step1Desc', icon: '📱' },
-                  { step: '2', key: 'step2', descKey: 'step2Desc', icon: '📷' },
-                  { step: '3', key: 'step3', descKey: 'step3Desc', icon: '📍' },
-                  { step: '4', key: 'step4', descKey: 'step4Desc', icon: '🔄' }
+                  { step: '1', title: 'Open on Phone', desc: 'Open this page on your phone browser', icon: '📱' },
+                  { step: '2', title: 'Scan QR Code', desc: 'Scan the QR for the node you want', icon: '📷' },
+                  { step: '3', title: 'Allow GPS', desc: 'Grant location permission when prompted', icon: '📍' },
+                  { step: '4', title: 'Auto-Update', desc: 'Location updates instantly on map', icon: '🔄' }
                 ].map((item, idx) => (
                   <div key={idx} className="bg-slate-50 dark:bg-gray-700/30 rounded-xl p-4 border border-slate-200 dark:border-gray-600 hover:shadow-md transition-shadow">
                     <div className="flex items-start gap-3">
@@ -635,8 +601,8 @@ const AdminNodeLocations = () => {
                         {item.step}
                       </div>
                       <div>
-                        <p className="font-medium text-sm text-slate-700 dark:text-slate-200">{t(`qrLocations.${item.key}`)}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t(`qrLocations.${item.descKey}`)}</p>
+                        <p className="font-medium text-sm text-slate-700 dark:text-slate-200">{item.title}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.desc}</p>
                       </div>
                     </div>
                   </div>
@@ -645,12 +611,17 @@ const AdminNodeLocations = () => {
 
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700/30 flex items-start gap-2">
                 <span className="text-lg">💡</span>
-                <p className="text-xs text-amber-700 dark:text-amber-300">{t('qrLocations.tip')}</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  For local development, ensure PC and phone are on the same Wi-Fi network.
+                </p>
               </div>
 
+              {/* Reset Info */}
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700/30 flex items-start gap-2">
                 <span className="text-lg">🔄</span>
-                <p className="text-xs text-blue-700 dark:text-blue-300" dangerouslySetInnerHTML={{ __html: t('qrLocations.resetInfo') }} />
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Click the <strong>"Reset All"</strong> button in the header to restore all nodes to default locations.
+                </p>
               </div>
             </div>
           </motion.div>
@@ -667,14 +638,14 @@ const AdminNodeLocations = () => {
         <p className="flex items-center justify-center gap-2 flex-wrap">
           <span>© 2026 CanalIQ</span>
           <span className="hidden sm:inline">•</span>
-          <span>{t('qrLocations.footer')}</span>
+          <span>Node Location Manager</span>
           <span className="hidden sm:inline">•</span>
           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-            {Object.keys(nodes).length} {t('qrLocations.totalNodes')}
+            {Object.keys(nodes).length} Nodes
           </span>
           <span className="hidden sm:inline">•</span>
           <span className="text-slate-400 dark:text-slate-500">
-            {totalUpdated > 0 ? `${totalUpdated} ${t('qrLocations.updated')}` : t('qrLocations.default')}
+            {totalUpdated > 0 ? `${totalUpdated} updated` : 'Default locations'}
           </span>
         </p>
       </motion.div>
