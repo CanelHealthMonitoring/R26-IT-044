@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import * as Ably from 'ably'   // 🔥 ABLY IMPORT
 
 // ============================================================
-// WebSocket URL (Same as other pages)
+// WebSocket URL
 // ============================================================
 const WS_URL = 'wss://zerg0hkzgi.execute-api.eu-north-1.amazonaws.com/production/'
 
@@ -15,7 +16,44 @@ const UpdateLocation = () => {
   const socketRef = useRef(null)
   const [wsConnected, setWsConnected] = useState(false)
 
-  // ===== WebSocket Connection (for broadcasting) =====
+  // 🔥 Ably ref
+  const ablyRef = useRef(null)
+
+  // ============================================================
+  // 🔥🔥 ABLY CLIENT INITIALIZATION
+  // ============================================================
+  useEffect(() => {
+    console.log('🔵 [DEBUG] Ably useEffect STARTED (Phone)')
+    
+    try {
+      ablyRef.current = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+      console.log('🔵 [DEBUG] Ably Client Created (Phone)')
+
+      // Connection State Logging
+      ablyRef.current.connection.on('connected', () => {
+        console.log('✅ [ABLY PHONE] Connected successfully!')
+      })
+      
+      ablyRef.current.connection.on('connecting', () => {
+        console.log('🔄 [ABLY PHONE] Connecting...')
+      })
+      
+      ablyRef.current.connection.on('failed', (err) => {
+        console.error('❌ [ABLY PHONE] Connection Failed:', err)
+      })
+    } catch (err) {
+      console.error('❌ [DEBUG] Ably Creation Failed (Phone):', err)
+    }
+
+    return () => {
+      console.log('🔵 [DEBUG] Ably cleanup (Phone)')
+      if (ablyRef.current) ablyRef.current.close()
+    }
+  }, [])
+
+  // ============================================================
+  // WebSocket Connection (Fallback)
+  // ============================================================
   useEffect(() => {
     if (!nodeId) return
 
@@ -48,8 +86,11 @@ const UpdateLocation = () => {
     }
   }, [nodeId])
 
-  // ===== Broadcast Location via WebSocket =====
+  // ============================================================
+  // 🔥🔥 BROADCAST LOCATION via WebSocket + ABLY
+  // ============================================================
   const broadcastLocation = (nodeId, lat, lng) => {
+    // 1. WebSocket (Fallback)
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       const message = JSON.stringify({
         type: 'location-update',
@@ -58,18 +99,31 @@ const UpdateLocation = () => {
         lng: lng
       })
       socketRef.current.send(message)
-      console.log('📡 Location broadcast sent:', message)
+      console.log('📡 WebSocket broadcast sent:', message)
+    }
+
+    // 2. 🔥🔥 ABLY - MAIN BROADCAST
+    if (ablyRef.current) {
+      const channel = ablyRef.current.channels.get('canal-updates')
+      channel.publish('location-changed', {
+        nodeId: nodeId,
+        lat: lat,
+        lng: lng,
+        timestamp: Date.now()
+      })
+      console.log('✅ [ABLY PHONE] Broadcast sent!', nodeId, lat, lng)
     } else {
-      console.warn('⚠️ WebSocket not connected, cannot broadcast')
+      console.error('❌ [ABLY PHONE] Ably client not ready!')
     }
   }
 
-  // ===== Save to localStorage =====
+  // ============================================================
+  // Save to localStorage
+  // ============================================================
   const saveToLocalStorage = (nodeId, lat, lng) => {
     const saved = localStorage.getItem('node_locations')
     const nodes = saved ? JSON.parse(saved) : {}
-    
-    // Load default nodes if empty
+
     const DEFAULT_NODES = {
       'Sensor01': { lat: 7.1395, lng: 80.0408, label: 'Sensor Node 01', type: 'sensor' },
       'Sensor02': { lat: 7.1368, lng: 80.0415, label: 'Sensor Node 02', type: 'sensor' },
@@ -81,25 +135,18 @@ const UpdateLocation = () => {
 
     const allNodes = { ...DEFAULT_NODES, ...nodes }
     if (allNodes[nodeId]) {
-      allNodes[nodeId] = {
-        ...allNodes[nodeId],
-        lat: lat,
-        lng: lng
-      }
+      allNodes[nodeId] = { ...allNodes[nodeId], lat: lat, lng: lng }
     } else {
-      allNodes[nodeId] = {
-        label: nodeId,
-        type: 'unknown',
-        lat: lat,
-        lng: lng
-      }
+      allNodes[nodeId] = { label: nodeId, type: 'unknown', lat: lat, lng: lng }
     }
 
     localStorage.setItem('node_locations', JSON.stringify(allNodes))
     console.log('💾 Saved to localStorage:', nodeId, lat, lng)
   }
 
-  // ===== Main GPS Logic =====
+  // ============================================================
+  // Main GPS Logic
+  // ============================================================
   useEffect(() => {
     if (!nodeId) {
       setStatus('❌ Invalid node ID')
@@ -115,16 +162,16 @@ const UpdateLocation = () => {
       (position) => {
         const { latitude, longitude } = position.coords
         setCoords({ lat: latitude, lng: longitude })
-        
+
         // 1. Save to localStorage
         saveToLocalStorage(nodeId, latitude, longitude)
-        
-        // 2. Broadcast via WebSocket
+
+        // 2. Broadcast via WebSocket + Ably
         broadcastLocation(nodeId, latitude, longitude)
-        
+
         setStatus('✅ Location captured! Redirecting...')
-        
-        // 3. Redirect back to admin page with coordinates
+
+        // 3. Redirect back to admin page
         setTimeout(() => {
           const redirectUrl = `/admin/locations?update=${nodeId}&lat=${latitude}&lng=${longitude}`
           window.location.href = redirectUrl
@@ -182,25 +229,16 @@ const UpdateLocation = () => {
           <div className="mt-4 text-left">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Manual Entry (Fallback):</p>
             <div className="flex gap-2">
-              <input
-                id="manualLat"
-                type="text"
-                placeholder="Latitude"
-                className="flex-1 px-3 py-2 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg text-sm"
-              />
-              <input
-                id="manualLng"
-                type="text"
-                placeholder="Longitude"
-                className="flex-1 px-3 py-2 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg text-sm"
-              />
+              <input id="manualLat" type="text" placeholder="Latitude"
+                className="flex-1 px-3 py-2 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg text-sm" />
+              <input id="manualLng" type="text" placeholder="Longitude"
+                className="flex-1 px-3 py-2 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg text-sm" />
             </div>
             <button
               onClick={() => {
                 const lat = document.getElementById('manualLat').value
                 const lng = document.getElementById('manualLng').value
                 if (lat && lng) {
-                  // Save manually
                   saveToLocalStorage(nodeId, parseFloat(lat), parseFloat(lng))
                   broadcastLocation(nodeId, parseFloat(lat), parseFloat(lng))
                   window.location.href = `/admin/locations?update=${nodeId}&lat=${lat}&lng=${lng}`
@@ -213,7 +251,6 @@ const UpdateLocation = () => {
           </div>
         )}
 
-        {/* WebSocket Status */}
         <div className="mt-3 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400' : 'bg-red-400'}`} />
           {wsConnected ? '📡 Live broadcast enabled' : '📡 Broadcasting offline'}
