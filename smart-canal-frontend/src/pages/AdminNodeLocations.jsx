@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi'
 import QRCode from 'qrcode.react'
 import { IMAGES } from '../assets/images'
+import * as Ably from 'ably'   // 🔥 ABLY IMPORT
 
 // ============================================================
 // DEFAULT NODE COORDINATES
@@ -36,10 +37,63 @@ const AdminNodeLocations = () => {
   })
   const [copiedId, setCopiedId] = useState(null)
   const [totalUpdated, setTotalUpdated] = useState(0)
-  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('grid')
   const [activeView, setActiveView] = useState('nodes')
   const [isResetting, setIsResetting] = useState(false)
   const wsSocketRef = useRef(null)
+  const ablyRef = useRef(null)   // 🔥 ABLY REF
+
+  // ============================================================
+  // 🔥🔥 ABLY CLIENT INITIALIZATION
+  // ============================================================
+  useEffect(() => {
+    console.log('🔵 [ADMIN] Ably init...')
+    try {
+      ablyRef.current = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+      
+      ablyRef.current.connection.on('connected', () => {
+        console.log('✅ [ABLY ADMIN] Connected successfully!')
+      })
+      
+      ablyRef.current.connection.on('failed', (err) => {
+        console.error('❌ [ABLY ADMIN] Failed:', err)
+      })
+    } catch (err) {
+      console.error('❌ [ADMIN] Ably Creation Failed:', err)
+    }
+
+    return () => {
+      if (ablyRef.current) ablyRef.current.close()
+    }
+  }, [])
+
+  // ============================================================
+  // 🔥 ABLY LISTENER - Location Updates from Phone
+  // ============================================================
+  useEffect(() => {
+    if (!ablyRef.current) return
+
+    const channel = ablyRef.current.channels.get('canal-updates')
+    console.log('🔵 [ADMIN] Subscribed to canal-updates')
+
+    channel.subscribe('location-changed', (message) => {
+      const data = message.data
+      console.log('📍 [ABLY ADMIN] Location Update:', data)
+
+      setNodes(prev => {
+        const updated = { ...prev }
+        if (updated[data.nodeId]) {
+          updated[data.nodeId] = { ...updated[data.nodeId], lat: data.lat, lng: data.lng }
+          localStorage.setItem('node_locations', JSON.stringify(updated))
+        }
+        return updated
+      })
+    })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [])
 
   // Update count
   useEffect(() => {
@@ -70,49 +124,43 @@ const AdminNodeLocations = () => {
       localStorage.setItem('node_locations', JSON.stringify(updated))
       window.history.replaceState({}, document.title, window.location.pathname)
       
-      // Toast
       const toast = document.createElement('div')
-      toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
+      toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 border border-white/20'
       toast.innerHTML = `
         <span class="text-2xl">📍</span>
         <div>
           <p class="font-bold text-sm">${nodes[nodeId]?.label || nodeId}</p>
-          <p class="text-xs opacity-90">Location updated successfully!</p>
+          <p class="text-xs opacity-90">Location updated!</p>
         </div>
       `
       document.body.appendChild(toast)
       setTimeout(() => {
         toast.style.opacity = '0'
         toast.style.transform = 'translateX(100px)'
-        toast.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+        toast.style.transition = 'all 0.5s ease'
         setTimeout(() => toast.remove(), 600)
       }, 3000)
-      
-      setTimeout(() => window.location.reload(), 500)
     }
   }, [])
 
   // ============================================================
-  // RESET FUNCTION
+  // 🔥🔥 RESET FUNCTION - Publishes via ABLY
   // ============================================================
   const resetLocations = () => {
     if (isResetting) return
     
-    // Confirm before reset
-    if (!window.confirm('⚠️ Are you sure you want to reset all node locations to default values?')) {
+    if (!window.confirm('⚠️ Reset all node locations to default?')) {
       return
     }
 
     setIsResetting(true)
 
     try {
-      // 1. Reset to default values
+      // 1. Update local state + localStorage
       setNodes(DEFAULT_NODES)
-      
-      // 2. Update localStorage
       localStorage.setItem('node_locations', JSON.stringify(DEFAULT_NODES))
-      
-      // 3. Broadcast reset via WebSocket
+
+      // 2. WebSocket broadcast (fallback)
       if (wsSocketRef.current?.readyState === WebSocket.OPEN) {
         wsSocketRef.current.send(JSON.stringify({
           type: 'location-reset',
@@ -120,25 +168,36 @@ const AdminNodeLocations = () => {
         }))
       }
 
-      // 4. Show success toast
+      // 3. 🔥🔥 ABLY BROADCAST - Main reset notification
+      if (ablyRef.current) {
+        const channel = ablyRef.current.channels.get('canal-updates')
+        channel.publish('reset-all', {
+          timestamp: Date.now()
+        })
+        console.log('✅ [ADMIN] Ably reset-all published!')
+      } else {
+        console.error('❌ [ADMIN] Ably not ready')
+      }
+
+      // 4. Success Toast
       const toast = document.createElement('div')
-      toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 border border-white/20 animate-slide-in-right'
+      toast.className = 'fixed top-6 right-6 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-amber-500/40 flex items-center gap-3 border border-white/20'
       toast.innerHTML = `
         <span class="text-2xl">🔄</span>
         <div>
           <p class="font-bold text-sm">All locations reset!</p>
-          <p class="text-xs opacity-90">All nodes restored to default positions</p>
+          <p class="text-xs opacity-90">Nodes restored to default positions</p>
         </div>
       `
       document.body.appendChild(toast)
       setTimeout(() => {
         toast.style.opacity = '0'
         toast.style.transform = 'translateX(100px)'
-        toast.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+        toast.style.transition = 'all 0.5s ease'
         setTimeout(() => toast.remove(), 600)
       }, 3000)
 
-      // 5. Force refresh of MapView via storage event
+      // 5. Force refresh
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'node_locations',
         newValue: JSON.stringify(DEFAULT_NODES)
@@ -165,7 +224,6 @@ const AdminNodeLocations = () => {
           const data = JSON.parse(event.data)
           
           if (data.type === 'location-update') {
-            console.log('📍 Location update received:', data.nodeId)
             setNodes(prev => {
               const updated = { ...prev }
               if (updated[data.nodeId]) {
@@ -176,9 +234,7 @@ const AdminNodeLocations = () => {
             })
           }
           
-          // Handle reset broadcast from other tabs
           if (data.type === 'location-reset') {
-            console.log('🔄 Reset broadcast received')
             setNodes(DEFAULT_NODES)
             localStorage.setItem('node_locations', JSON.stringify(DEFAULT_NODES))
           }
@@ -257,7 +313,7 @@ const AdminNodeLocations = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-6 transition-colors duration-300">
       
-      {/* ===== HERO BANNER ===== */}
+      {/* HERO BANNER */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -295,7 +351,6 @@ const AdminNodeLocations = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* ===== RESET BUTTON ===== */}
               <button
                 onClick={resetLocations}
                 disabled={isResetting}
@@ -318,7 +373,7 @@ const AdminNodeLocations = () => {
         </div>
       </motion.div>
 
-      {/* ===== STATS CARDS ===== */}
+      {/* STATS CARDS */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -350,7 +405,7 @@ const AdminNodeLocations = () => {
         })}
       </motion.div>
 
-      {/* ===== VIEW TOGGLE ===== */}
+      {/* VIEW TOGGLE */}
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div className="flex items-center gap-2">
           <button
@@ -377,20 +432,17 @@ const AdminNodeLocations = () => {
           </button>
         </div>
 
-        {/* View Mode Toggle - Grid/List */}
         {activeView === 'nodes' && (
           <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-1 shadow-sm">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              title="Grid view"
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}
             >
               <FiGrid size={16} />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              title="List view"
+              className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}
             >
               <FiList size={16} />
             </button>
@@ -398,7 +450,7 @@ const AdminNodeLocations = () => {
         )}
       </div>
 
-      {/* ===== VIEW: NODES ===== */}
+      {/* NODES VIEW */}
       <AnimatePresence mode="wait">
         {activeView === 'nodes' && (
           <motion.div
@@ -422,21 +474,19 @@ const AdminNodeLocations = () => {
                   transition={{ delay: groupIndex * 0.08 }}
                   className={`mb-6 rounded-2xl border ${typeBg} p-4 md:p-5`}
                 >
-                  {/* Group Header */}
                   <div className="flex items-center gap-3 mb-4">
-                    <div className={`p-2 rounded-xl bg-${typeColor}-100 dark:bg-${typeColor}-900/30 text-${typeColor}-600 dark:text-${typeColor}-400`}>
+                    <div className={`p-2 rounded-xl bg-${typeColor}-100 dark:bg-${typeColor}-900/30 text-${typeColor}-600`}>
                       {getTypeIcon(type)}
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-800 dark:text-white">{getTypeTitle(type)}</h3>
                       <p className="text-xs text-slate-400 dark:text-slate-500">{getTypeDescription(type)}</p>
                     </div>
-                    <span className={`ml-auto text-xs font-medium px-2.5 py-0.5 rounded-full bg-${typeColor}-100 dark:bg-${typeColor}-900/30 text-${typeColor}-700 dark:text-${typeColor}-300`}>
+                    <span className={`ml-auto text-xs font-medium px-2.5 py-0.5 rounded-full bg-${typeColor}-100 dark:bg-${typeColor}-900/30 text-${typeColor}-700`}>
                       {items.length} Nodes
                     </span>
                   </div>
 
-                  {/* Nodes Grid */}
                   <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4`}>
                     {items.map(([id, node], index) => {
                       const qrUrl = getQRUrl(id)
@@ -456,7 +506,6 @@ const AdminNodeLocations = () => {
                           className={`bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-all duration-300 ${viewMode === 'list' ? 'flex items-center gap-4' : ''}`}
                         >
                           {viewMode === 'list' ? (
-                            // === LIST VIEW ===
                             <>
                               <div className="flex-shrink-0 flex items-center gap-3 min-w-[140px]">
                                 <span className="text-lg">{getNodeIcon(node.type)}</span>
@@ -467,24 +516,21 @@ const AdminNodeLocations = () => {
                               </div>
 
                               <div className="flex-1 flex items-center gap-4 flex-wrap">
-                                {/* QR Code */}
                                 <div className="bg-white dark:bg-gray-900 p-2 rounded-lg border border-slate-200 dark:border-gray-600">
                                   <QRCode value={qrUrl} size={80} level="H" includeMargin={true} fgColor="#1e293b" bgColor="#ffffff" />
                                 </div>
 
-                                {/* Location */}
                                 <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                                   📍 {currentCoords}
-                                  <span className="ml-2 text-[10px] text-slate-400 dark:text-slate-500">
+                                  <span className="ml-2 text-[10px] text-slate-400">
                                     {isDefault ? '(Default)' : '(Custom)'}
                                   </span>
                                 </div>
 
-                                {/* Actions */}
                                 <div className="flex items-center gap-2 ml-auto">
                                   <button
                                     onClick={() => copyToClipboard(qrUrl, id)}
-                                    className="p-1.5 bg-slate-100 dark:bg-gray-700/50 hover:bg-slate-200 dark:hover:bg-gray-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
+                                    className="p-1.5 bg-slate-100 dark:bg-gray-700/50 hover:bg-slate-200 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
                                   >
                                     {copiedId === id ? <FiCheck className="text-emerald-500" size={14} /> : <FiCopy size={14} />}
                                   </button>
@@ -498,9 +544,7 @@ const AdminNodeLocations = () => {
                               </div>
                             </>
                           ) : (
-                            // === GRID VIEW ===
                             <>
-                              {/* Header */}
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                   <span className="text-lg">{getNodeIcon(node.type)}</span>
@@ -508,34 +552,31 @@ const AdminNodeLocations = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className={`w-1.5 h-1.5 rounded-full ${isDefault ? 'bg-slate-300 dark:bg-slate-600' : 'bg-emerald-400 animate-pulse'}`} />
-                                  <span className={`text-[9px] ${isDefault ? 'text-slate-400 dark:text-slate-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                  <span className={`text-[9px] ${isDefault ? 'text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                     {isDefault ? 'Default' : 'Custom'}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* QR Code - Always visible */}
                               <div className="flex justify-center py-2">
                                 <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-slate-200 dark:border-gray-600">
                                   <QRCode value={qrUrl} size={110} level="H" includeMargin={true} fgColor="#1e293b" bgColor="#ffffff" />
                                 </div>
                               </div>
 
-                              {/* Location */}
                               <div className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-2 mb-2">
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate">
                                   📍 {currentCoords}
                                 </p>
                               </div>
 
-                              {/* Actions */}
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => copyToClipboard(qrUrl, id)}
-                                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-gray-700/50 hover:bg-slate-200 dark:hover:bg-gray-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors"
+                                  className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-gray-700/50 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors"
                                 >
                                   {copiedId === id ? (
-                                    <><FiCheck className="text-emerald-500" size={12} /> <span className="text-emerald-600 dark:text-emerald-400">Copied!</span></>
+                                    <><FiCheck className="text-emerald-500" size={12} /> <span className="text-emerald-600">Copied!</span></>
                                   ) : (
                                     <><FiCopy size={12} /> Copy</>
                                   )}
@@ -561,7 +602,7 @@ const AdminNodeLocations = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== VIEW: INSTRUCTIONS ===== */}
+      {/* INSTRUCTIONS VIEW */}
       <AnimatePresence mode="wait">
         {activeView === 'instructions' && (
           <motion.div
@@ -572,7 +613,6 @@ const AdminNodeLocations = () => {
             transition={{ duration: 0.2 }}
             className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden"
           >
-            {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/10 dark:to-teal-900/10">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
@@ -595,7 +635,7 @@ const AdminNodeLocations = () => {
                   { step: '3', title: 'Allow GPS', desc: 'Grant location permission when prompted', icon: '📍' },
                   { step: '4', title: 'Auto-Update', desc: 'Location updates instantly on map', icon: '🔄' }
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-slate-50 dark:bg-gray-700/30 rounded-xl p-4 border border-slate-200 dark:border-gray-600 hover:shadow-md transition-shadow">
+                  <div key={idx} className="bg-slate-50 dark:bg-gray-700/30 rounded-xl p-4 border border-slate-200 dark:border-gray-600">
                     <div className="flex items-start gap-3">
                       <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
                         {item.step}
@@ -616,7 +656,6 @@ const AdminNodeLocations = () => {
                 </p>
               </div>
 
-              {/* Reset Info */}
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700/30 flex items-start gap-2">
                 <span className="text-lg">🔄</span>
                 <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -628,7 +667,7 @@ const AdminNodeLocations = () => {
         )}
       </AnimatePresence>
 
-      {/* ===== FOOTER ===== */}
+      {/* FOOTER */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
