@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { IMAGES } from '../assets/images'
-import * as Ably from 'ably'   // 🔥 ABLY IMPORT
+import * as Ably from 'ably'
 
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -567,7 +567,7 @@ const MapView = () => {
   const [nodeCoords, setNodeCoords] = useState(getNodeLocations())
 
   // ============================================================
-  // 🔥 FIX: LISTEN FOR localStorage CHANGES (from Admin page)
+  // 🔥 STORAGE EVENT LISTENER (localStorage changes from Admin)
   // ============================================================
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -599,7 +599,7 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // 🔥 FIX: Listen for tab focus (same tab updates)
+  // 🔥 TAB FOCUS LISTENER (same tab updates)
   // ============================================================
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -614,16 +614,48 @@ const MapView = () => {
   }, [])
 
   // ============================================================
-  // 🔥🔥 ABLY LISTENER - Real-time Location Updates
+  // 🔥🔥 ABLY LISTENER - Real-time Location Updates (WITH DEBUG)
   // ============================================================
   useEffect(() => {
-    const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+    console.log('🔵 [DEBUG] Ably useEffect STARTED')
+    
+    let ably
+    try {
+      ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+      console.log('🔵 [DEBUG] Ably Client Created')
+    } catch (err) {
+      console.error('❌ [DEBUG] Ably Creation Failed:', err)
+      return
+    }
+
+    // Connection State Logging
+    ably.connection.on('connected', () => {
+      console.log('✅ [ABLY] Connected successfully!')
+    })
+    
+    ably.connection.on('connecting', () => {
+      console.log('🔄 [ABLY] Connecting...')
+    })
+    
+    ably.connection.on('disconnected', () => {
+      console.warn('⚠️ [ABLY] Disconnected')
+    })
+    
+    ably.connection.on('failed', (err) => {
+      console.error('❌ [ABLY] Connection Failed:', err)
+    })
+    
+    ably.connection.on('suspended', () => {
+      console.warn('⏸️ [ABLY] Suspended')
+    })
+
     const channel = ably.channels.get('canal-updates')
+    console.log('🔵 [DEBUG] Channel acquired: canal-updates')
 
     // Listen for location updates from Phone
     channel.subscribe('location-changed', (message) => {
       const data = message.data
-      console.log('📍 ABLY Location Update Received in Map:', data)
+      console.log('📍 [ABLY] Location Update Received:', data)
 
       const saved = localStorage.getItem('node_locations')
       let nodes = saved ? JSON.parse(saved) : getNodeLocations()
@@ -639,8 +671,9 @@ const MapView = () => {
 
         setNodeCoords(merged)
         setLastUpdated(new Date())
+        console.log('✅ [ABLY] Map Updated with new coords for', data.nodeId)
 
-        // Toast notification
+        // Toast
         const toast = document.createElement('div')
         toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
         toast.innerHTML = `
@@ -657,12 +690,14 @@ const MapView = () => {
           toast.style.transition = 'all 0.5s ease'
           setTimeout(() => toast.remove(), 600)
         }, 3000)
+      } else {
+        console.warn('⚠️ [ABLY] Node not found:', data.nodeId)
       }
     })
 
     // Listen for reset from Admin
     channel.subscribe('reset-all', () => {
-      console.log('🔄 ABLY Reset received in Map!')
+      console.log('🔄 [ABLY] Reset received')
       const defaultNodes = { ...DEFAULT_NODES }
       localStorage.setItem('node_locations', JSON.stringify(defaultNodes))
       setNodeCoords(defaultNodes)
@@ -670,12 +705,13 @@ const MapView = () => {
     })
 
     return () => {
+      console.log('🔵 [DEBUG] Ably cleanup')
       ably.close()
     }
   }, [])
 
   // ============================================================
-  // WEB SOCKET - For sensor data only (not location updates)
+  // WEB SOCKET - For sensor data only
   // ============================================================
   const connectWebSocket = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) return
