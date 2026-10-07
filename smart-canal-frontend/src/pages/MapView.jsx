@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { IMAGES } from '../assets/images'
+import * as Ably from 'ably'   // 🔥 ABLY IMPORT
 
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -575,7 +576,6 @@ const MapView = () => {
         setNodeCoords(updated)
         console.log('🔄 Map updated from localStorage change')
         
-        // Show toast notification
         const toast = document.createElement('div')
         toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
         toast.innerHTML = `
@@ -614,6 +614,67 @@ const MapView = () => {
   }, [])
 
   // ============================================================
+  // 🔥🔥 ABLY LISTENER - Real-time Location Updates
+  // ============================================================
+  useEffect(() => {
+    const ably = new Ably.Realtime('vK8RbQ.zhqR1A:K2eSS_Q6_HzTLbCtP0pSWMzV3MLE1Zzzn1biT9XZWj4')
+    const channel = ably.channels.get('canal-updates')
+
+    // Listen for location updates from Phone
+    channel.subscribe('location-changed', (message) => {
+      const data = message.data
+      console.log('📍 ABLY Location Update Received in Map:', data)
+
+      const saved = localStorage.getItem('node_locations')
+      let nodes = saved ? JSON.parse(saved) : getNodeLocations()
+
+      if (nodes[data.nodeId]) {
+        nodes[data.nodeId] = {
+          ...nodes[data.nodeId],
+          lat: data.lat,
+          lng: data.lng
+        }
+        const merged = { ...DEFAULT_NODES, ...nodes }
+        localStorage.setItem('node_locations', JSON.stringify(merged))
+
+        setNodeCoords(merged)
+        setLastUpdated(new Date())
+
+        // Toast notification
+        const toast = document.createElement('div')
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-emerald-500/40 flex items-center gap-3 backdrop-blur-sm border border-white/20'
+        toast.innerHTML = `
+          <span class="text-xl">📍</span>
+          <div>
+            <p class="font-semibold text-sm">${data.nodeId} Location Updated!</p>
+            <p class="text-xs opacity-90">Map refreshed automatically</p>
+          </div>
+        `
+        document.body.appendChild(toast)
+        setTimeout(() => {
+          toast.style.opacity = '0'
+          toast.style.transform = 'translateX(-50%) translateY(20px)'
+          toast.style.transition = 'all 0.5s ease'
+          setTimeout(() => toast.remove(), 600)
+        }, 3000)
+      }
+    })
+
+    // Listen for reset from Admin
+    channel.subscribe('reset-all', () => {
+      console.log('🔄 ABLY Reset received in Map!')
+      const defaultNodes = { ...DEFAULT_NODES }
+      localStorage.setItem('node_locations', JSON.stringify(defaultNodes))
+      setNodeCoords(defaultNodes)
+      setLastUpdated(new Date())
+    })
+
+    return () => {
+      ably.close()
+    }
+  }, [])
+
+  // ============================================================
   // WEB SOCKET - For sensor data only (not location updates)
   // ============================================================
   const connectWebSocket = () => {
@@ -631,7 +692,6 @@ const MapView = () => {
           const data = JSON.parse(event.data)
           console.log('📩 Raw WebSocket Data Received:', data)
           
-          // Sensor data only (location updates handled by localStorage)
           if (Array.isArray(data)) {
             data.forEach(node => {
               if (node.nodeId) {
